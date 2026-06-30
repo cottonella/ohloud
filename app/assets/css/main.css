@@ -139,3 +139,16 @@ body {
     animation: none;
   }
 }
+
+/* ── Soft corners everywhere ─────────────────────────────────── */
+/* daisyUI v5 tabs/progress don't inherit the theme radius. */
+.tabs,
+.tabs-boxed {
+  border-radius: var(--radius-box);
+}
+.tab {
+  border-radius: var(--radius-field);
+}
+.progress {
+  border-radius: var(--radius-box);
+}
