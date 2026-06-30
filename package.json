@@ -15,7 +15,8 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "tsx bench/run.ts"
   },
   "devDependencies": {
     "@antfu/eslint-config": "9.1.0",
@@ -37,6 +38,7 @@
     "nodemon": "3.1.14",
     "nuxt": "4.4.8",
     "tailwindcss": "4.3.2",
+    "tsx": "^4.22.4",
     "vitest": "^4.1.9",
     "vue": "latest",
     "wait-on": "9.0.10",

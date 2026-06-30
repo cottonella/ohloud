@@ -38,8 +38,9 @@ export interface KdfParams {
 }
 
 /**
- * Production default. 2^16 KiB = 64 MiB, t=3, p=1 (pure-JS is single-threaded,
- * so lanes>1 only adds sequential cost). ~3–6 s on a typical laptop; tuned in
- * the calibration pass (TASKS.md §16). Override per-call for tests.
+ * Production default. 2^15 KiB = 32 MiB, t=3, p=1 (pure-JS is single-threaded,
+ * so lanes>1 only adds sequential cost). Measured ~2 s on a mid laptop in the
+ * §16 calibration pass — within the 1–3 s target, and well above OWASP's 19 MiB
+ * baseline. Override per-call for tests.
  */
-export const DEFAULT_KDF: KdfParams = { memLog2: 16, time: 3, lanes: 1 }
+export const DEFAULT_KDF: KdfParams = { memLog2: 15, time: 3, lanes: 1 }
