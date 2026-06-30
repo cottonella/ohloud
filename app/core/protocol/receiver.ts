@@ -6,7 +6,7 @@
 
 import type { WireHeader } from './wire-header'
 import { demodulateMfsk, mfskConfig } from '../dsp/mfsk'
-import { chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, locateChirp, payloadSamples } from './frame'
+import { chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, locateChirp, ofdmGuardSamples, payloadSamples } from './frame'
 import { decodeWireHeader, HEADER_CODED_LEN } from './wire-header'
 
 export interface FrameReceiverEvents {
@@ -118,7 +118,7 @@ export class FrameReceiver {
         this.events.onError?.(error as Error)
         return
       }
-      this.frameSamples = this.chirpLen + this.headerLen + payloadSamples(this.sampleRate, header.blockCount)
+      this.frameSamples = this.chirpLen + this.headerLen + ofdmGuardSamples(this.sampleRate, header.mode) + payloadSamples(this.sampleRate, header.blockCount, header.mode)
       this.state = 'payload'
       this.events.onHeader?.(header, this.frameSamples)
     }

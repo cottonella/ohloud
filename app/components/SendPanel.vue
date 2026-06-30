@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { estimateDurationSec, playPcm } from '~/core'
+import type { AudioOutput } from '~/core'
+import { estimateDurationSec, openAudioOutput } from '~/core'
 
 type Stage = 'idle' | 'encoding' | 'playing' | 'done' | 'error'
 
 const codec = useCodec()
 
 const mode = ref<'text' | 'file'>('text')
+const speed = ref<'robust' | 'fast'>('robust')
 const text = ref('')
 const file = ref<File | null>(null)
 const dragOver = ref(false)
@@ -14,6 +16,7 @@ const stage = ref<Stage>('idle')
 const passOpen = ref(false)
 const errorMsg = ref('')
 const durationSec = ref(0)
+const outputRate = ref(0)
 const progress = ref(0)
 
 let playback: { stop: () => void, finished: Promise<void> } | null = null
@@ -24,9 +27,9 @@ const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 :
 const estimate = computed(() => {
   if (mode.value === 'text') {
     const bytes = new TextEncoder().encode(text.value).length
-    return estimateDurationSec(bytes, 17)
+    return estimateDurationSec(bytes, 17, 48000, speed.value)
   }
-  return file.value ? estimateDurationSec(file.value.size, file.value.name.length) : 0
+  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value) : 0
 })
 
 const estimateLabel = computed(() => {
@@ -82,15 +85,21 @@ async function onKey(passphrase: string) {
   passOpen.value = false
   stage.value = 'encoding'
   errorMsg.value = ''
+  let output: AudioOutput | null = null
   try {
+    // Open the speaker first (within this user gesture) and encode at its REAL
+    // rate. iOS often isn't 48 kHz; matching it avoids a lossy browser resample
+    // that would corrupt Fast/OFDM (Robust/MFSK survives it, Fast doesn't).
+    output = await openAudioOutput()
+    outputRate.value = output.sampleRate
     const reply = mode.value === 'text'
-      ? await codec.encodeText(text.value, passphrase)
-      : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), passphrase)
+      ? await codec.encodeText(text.value, passphrase, output.sampleRate, speed.value)
+      : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), passphrase, output.sampleRate, speed.value)
 
     durationSec.value = reply.durationSec
     stage.value = 'playing'
     startProgress()
-    playback = await playPcm(reply.pcm, reply.sampleRate)
+    playback = output.play(reply.pcm)
     await playback.finished
     progress.value = 1
     stage.value = 'done'
@@ -101,6 +110,7 @@ async function onKey(passphrase: string) {
   }
   finally {
     clearTimer()
+    output?.close()
     playback = null
   }
 }
@@ -155,6 +165,22 @@ onBeforeUnmount(() => {
         <span v-else class="opacity-70">Drop a file here, or click to browse</span>
       </label>
 
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm font-medium opacity-70">Speed</span>
+          <PillTabs
+            v-model="speed"
+            :options="[
+              { value: 'robust', label: '🐢 Robust' },
+              { value: 'fast', label: '🐇 Fast' },
+            ]"
+          />
+        </div>
+        <p v-if="speed === 'fast'" class="text-xs opacity-60">
+          🐇 Much faster — likes a quiet room with the devices close. 🐢 Robust is the sturdiest in noise.
+        </p>
+      </div>
+
       <div class="flex items-center justify-between">
         <div class="text-sm opacity-70">
           <span v-if="hasInput">Sound length: <span class="badge badge-accent badge-sm">{{ estimateLabel }}</span></span>
@@ -184,7 +210,7 @@ onBeforeUnmount(() => {
         </p>
         <progress class="progress progress-primary w-64" :value="progress" max="1" />
         <p class="text-xs opacity-60">
-          Keep the other device close and listening.
+          Keep the other device close and listening.<span v-if="outputRate"> · {{ (outputRate / 1000).toFixed(1) }} kHz</span>
         </p>
         <button class="btn btn-ghost btn-sm" @click="stop">
           Stop

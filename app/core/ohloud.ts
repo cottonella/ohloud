@@ -14,8 +14,17 @@ import { open } from './container/open'
 import { sealFile, sealText } from './container/text'
 import { CorruptedError, UnsupportedError } from './errors'
 import { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
-import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, parseFrame, payloadSamples } from './protocol/frame'
-import { encodeWireHeader, FEC_RS, MODE_MFSK, WIRE_VERSION } from './protocol/wire-header'
+import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, ofdmGuardSamples, parseFrame, payloadSamples } from './protocol/frame'
+import { encodeWireHeader, FEC_RS, MODE_MFSK, MODE_OFDM_QPSK, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
+
+/** Robust MFSK (slow, very sturdy) or Fast OFDM (QPSK — higher rate, wants a cleaner channel). */
+export type TransmitMode = 'robust' | 'fast'
+
+function modeByte(mode: TransmitMode): number {
+  // QPSK is the Fast default: ~10–30× lower BER than 16-QAM through real room
+  // reverb + band-limiting, and still many times faster than Robust MFSK.
+  return mode === 'fast' ? MODE_OFDM_QPSK : MODE_MFSK
+}
 
 export interface EncodeOptions {
   /** Argon2id parameters (forwarded to the container). */
@@ -26,6 +35,8 @@ export interface EncodeOptions {
   fecNsym?: number
   /** Sample rate of the AudioContext that will play this PCM (default 48000). */
   sampleRate?: number
+  /** Transmission speed/robustness tier (default `'robust'`). */
+  mode?: TransmitMode
 }
 
 export interface EncodeResult {
@@ -48,18 +59,19 @@ const FEC_PAYLOAD_PER_BLOCK = 255 - 64 - 2 // default nsym=64 + 2-byte block CRC
  * without encrypting (drives the UI's "how long" indicator). Ignores
  * compression, so it's an upper bound for text.
  */
-export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sampleRate = DEFAULT_SAMPLE_RATE): number {
+export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sampleRate = DEFAULT_SAMPLE_RATE, mode: TransmitMode = 'robust'): number {
   const recordLen = 1 + 2 + filenameBytes + 8 + 32 + payloadBytes
   const blobLen = HEADER_LEN + recordLen + TAG_LEN
   const blockCount = Math.max(1, Math.ceil(blobLen / FEC_PAYLOAD_PER_BLOCK))
-  return (chirpSamples(sampleRate) + headerSamples(sampleRate) + payloadSamples(sampleRate, blockCount)) / sampleRate
+  const mb = modeByte(mode)
+  return (chirpSamples(sampleRate) + headerSamples(sampleRate) + ofdmGuardSamples(sampleRate, mb) + payloadSamples(sampleRate, blockCount, mb)) / sampleRate
 }
 
-function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number): EncodeResult {
+function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode: TransmitMode): EncodeResult {
   const { data: fecData, meta } = fecEncode(blob, { nsym: fecNsym })
   const headerCoded = encodeWireHeader({
     protoVer: WIRE_VERSION,
-    mode: MODE_MFSK,
+    mode: modeByte(mode),
     fec: FEC_RS,
     flags: 0,
     blobLen: blob.length,
@@ -67,20 +79,20 @@ function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number): Enco
     fecNsym,
     tailHash: tailHash(blob),
   })
-  const pcm = assembleFrame(headerCoded, fecData, sampleRate)
+  const pcm = assembleFrame(headerCoded, fecData, sampleRate, modeByte(mode))
   return { pcm, sampleRate, durationSec: pcm.length / sampleRate, containerBytes: blob.length }
 }
 
 /** Encode a UTF-8 text message into a transmittable PCM frame. */
 export function encodeText(text: string, passphrase: string, opts: EncodeOptions = {}): EncodeResult {
   const blob = sealText(text, passphrase, { kdf: opts.kdf, compress: opts.compress })
-  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE)
+  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust')
 }
 
 /** Encode arbitrary file bytes into a transmittable PCM frame. */
 export function encodeFile(filename: string, content: Uint8Array, passphrase: string, opts: EncodeOptions = {}): EncodeResult {
   const blob = sealFile(filename, content, passphrase, { kdf: opts.kdf, compress: opts.compress })
-  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE)
+  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust')
 }
 
 export interface DecodeOptions {
@@ -97,7 +109,7 @@ export interface DecodeOptions {
 export function decodePcm(pcm: Float32Array, passphrase: string, opts: DecodeOptions = {}): OpenResult {
   const sampleRate = opts.sampleRate ?? DEFAULT_SAMPLE_RATE
   const { header, fecData } = parseFrame(pcm, sampleRate, opts.maxSearchSamples)
-  if (header.mode !== MODE_MFSK)
+  if (!modeIsKnown(header.mode))
     throw new UnsupportedError(`transmission mode ${header.mode}`)
 
   let blob: Uint8Array

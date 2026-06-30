@@ -147,3 +147,22 @@ export function simulateChannel(pcm: Float32Array, opts: ChannelOptions = {}): F
 
   return x
 }
+
+export interface Tap { delaySamples: number, gain: number }
+
+/**
+ * Tapped-delay-line multipath: a sparse impulse response (direct path + echoes).
+ * Used to test OFDM's cyclic prefix — echoes within the CP are absorbed, echoes
+ * beyond it cause inter-symbol interference.
+ */
+export function multipath(pcm: Float32Array, taps: Tap[]): Float32Array {
+  let maxDelay = 0
+  for (const t of taps)
+    maxDelay = Math.max(maxDelay, t.delaySamples)
+  const out = new Float32Array(pcm.length + maxDelay)
+  for (const { delaySamples, gain } of taps) {
+    for (let i = 0; i < pcm.length; i++)
+      out[i + delaySamples] = out[i + delaySamples]! + gain * pcm[i]!
+  }
+  return out
+}

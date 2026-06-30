@@ -3,8 +3,10 @@
 // BER, full-frame decode success, and net throughput. Run: `npm run bench`.
 
 /* eslint-disable no-console -- CLI bench script, console output is the point */
+import type { Constellation } from '../app/core/dsp/ofdm'
 import type { ChannelOptions } from './channel'
 import { DEFAULT_MFSK, demodulateMfsk, modulateMfsk } from '../app/core/dsp/mfsk'
+import { bytesPerOfdmSymbol, demodulateOfdm, modulateOfdm, ofdmConfig } from '../app/core/dsp/ofdm'
 import { simulateChannel } from './channel'
 import { bytesEqual, modemDecodeFrame, modemEncodeFrame, randomBytes, SAMPLE_RATE } from './modem'
 
@@ -89,4 +91,34 @@ for (const reverb of [0.2, 0.4, 0.6, 0.8, 0.95]) {
 }
 
 console.log(`\nNet throughput (Robust MFSK, after FEC + framing): ${throughput().toFixed(1)} B/s`)
-console.log(`Symbol rate: ${(1 / (DEFAULT_MFSK.analysisSec + 2 * DEFAULT_MFSK.guardSec)).toFixed(1)} sym/s × 3 B = ${(3 / (DEFAULT_MFSK.analysisSec + 2 * DEFAULT_MFSK.guardSec)).toFixed(0)} B/s raw\n`)
+console.log(`Symbol rate: ${(1 / (DEFAULT_MFSK.analysisSec + 2 * DEFAULT_MFSK.guardSec)).toFixed(1)} sym/s × 3 B = ${(3 / (DEFAULT_MFSK.analysisSec + 2 * DEFAULT_MFSK.guardSec)).toFixed(0)} B/s raw`)
+
+// ── Fast OFDM (raw modem, noise + band-limit; short multipath is unit-tested) ─
+function ofdmBer(c: Constellation, snrDb: number, payload: number): number {
+  const cfg = ofdmConfig(c)
+  let bits = 0
+  const trials = 4
+  for (let t = 0; t < trials; t++) {
+    const d = randomBytes(payload, snrDb * 13 + t)
+    const dirty = simulateChannel(modulateOfdm(d, cfg), { snrDb, bandLow: 300, bandHigh: 12000, seed: snrDb * 7 + t })
+    const out = demodulateOfdm(dirty, d.length, cfg)
+    for (let i = 0; i < d.length; i++) {
+      let x = (out[i] ?? 0) ^ d[i]!
+      while (x) {
+        bits += x & 1
+        x >>= 1
+      }
+    }
+  }
+  return bits / (payload * 8 * trials)
+}
+
+console.log('\nFast OFDM (raw modem) — throughput vs SNR per constellation:')
+console.log('constellation   raw B/s    BER@30dB  BER@24dB  BER@18dB')
+for (const c of ['qpsk', 'qam16', 'qam64'] as Constellation[]) {
+  const cfg = ofdmConfig(c)
+  const payload = Math.floor(bytesPerOfdmSymbol(cfg)) * 8
+  const bps = payload / (modulateOfdm(randomBytes(payload, 1), cfg).length / SAMPLE_RATE)
+  console.log(`${c.padEnd(14)} ${bps.toFixed(0).padStart(6)}   ${pct(ofdmBer(c, 30, payload)).padStart(8)}  ${pct(ofdmBer(c, 24, payload)).padStart(8)}  ${pct(ofdmBer(c, 18, payload)).padStart(8)}`)
+}
+console.log('')

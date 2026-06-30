@@ -24,8 +24,8 @@ ctx.onmessage = (e: MessageEvent) => {
   try {
     if (m.type === 'encodeText' || m.type === 'encodeFile') {
       const r = m.type === 'encodeText'
-        ? encodeText(m.text, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf })
-        : encodeFile(m.filename, m.content, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf })
+        ? encodeText(m.text, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf, mode: m.mode })
+        : encodeFile(m.filename, m.content, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf, mode: m.mode })
       ctx.postMessage(
         { id: m.id, ok: true, pcm: r.pcm, sampleRate: r.sampleRate, durationSec: r.durationSec, containerBytes: r.containerBytes },
         [r.pcm.buffer],

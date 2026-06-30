@@ -4,6 +4,7 @@
 //   fecNsym(1) tailHash(16) crc16(2)
 // then Reed–Solomon encoded with HEADER_NSYM parity for robustness.
 
+import type { Constellation } from '../dsp/ofdm'
 import { ByteReader, bytesEqualCT, ByteWriter } from '../bytes'
 import { CorruptedError, UnsupportedError } from '../errors'
 import { crc16 } from '../fec/crc'
@@ -11,7 +12,30 @@ import { ReedSolomonError, rsDecode, rsEncode } from '../fec/reed-solomon'
 
 export const WIRE_VERSION = 0x01
 export const MODE_MFSK = 0x00
+export const MODE_OFDM_QPSK = 0x01
+export const MODE_OFDM_QAM16 = 0x02
+export const MODE_OFDM_QAM64 = 0x03
 export const FEC_RS = 0x00
+
+/** True if `mode` selects the Fast OFDM payload modem. */
+export function modeIsOfdm(mode: number): boolean {
+  return mode >= MODE_OFDM_QPSK && mode <= MODE_OFDM_QAM64
+}
+
+/** True if the receiver knows how to demodulate this payload mode. */
+export function modeIsKnown(mode: number): boolean {
+  return mode === MODE_MFSK || modeIsOfdm(mode)
+}
+
+/** OFDM constellation carried by an OFDM mode byte (defaults to 16-QAM). */
+export function modeConstellation(mode: number): Constellation {
+  return mode === MODE_OFDM_QPSK ? 'qpsk' : mode === MODE_OFDM_QAM64 ? 'qam64' : 'qam16'
+}
+
+/** Mode byte for an OFDM constellation. */
+export function ofdmMode(c: Constellation): number {
+  return c === 'qpsk' ? MODE_OFDM_QPSK : c === 'qam64' ? MODE_OFDM_QAM64 : MODE_OFDM_QAM16
+}
 
 const MAGIC = new Uint8Array([0x4F, 0x57]) // "OW"
 const HEADER_BODY_LEN = 29 // bytes covered by the CRC
