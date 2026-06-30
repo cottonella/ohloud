@@ -1,0 +1,64 @@
+{
+  "name": "ohloud",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nuxt 4 app that also runs as a fully-local Electron desktop app",
+  "author": "",
+  "main": "electron/dist/main.cjs",
+  "scripts": {
+    "postinstall": "nuxt prepare",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "electron:dev": "vite build --mode development --config electron/vite.config.ts && concurrently -k -n nuxt,vite,electron -c blue,yellow,magenta \"nuxt dev\" \"vite build --watch --mode development --config electron/vite.config.ts\" \"nodemon --exitcrash --watch \\\"electron/dist/**\\\" --exec \\\"wait-on tcp:127.0.0.1:3000 && electron . --remote-debugging-port=9223\\\"\"",
+    "build": "concurrently -n nuxt,electron -c blue,magenta \"nuxt generate\" \"vite build --config electron/vite.config.ts\"",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "9.1.0",
+    "@tailwindcss/vite": "4.3.2",
+    "@trpc/client": "11.18.0",
+    "@trpc/server": "11.18.0",
+    "concurrently": "10.0.3",
+    "daisyui": "5.6.6",
+    "electron": "43.0.0",
+    "electron-builder": "26.15.3",
+    "eslint": "10.6.0",
+    "eslint-plugin-format": "2.0.1",
+    "nodemon": "3.1.14",
+    "nuxt": "4.4.8",
+    "tailwindcss": "4.3.2",
+    "vue": "latest",
+    "wait-on": "9.0.10",
+    "zod": "4.4.3"
+  },
+  "build": {
+    "appId": "com.example.ohloud",
+    "productName": "ohloud",
+    "icon": "build/icon.png",
+    "files": [
+      "electron/dist/**/*",
+      ".output/public/**/*"
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": [
+        "zip"
+      ]
+    },
+    "mac": {
+      "target": [
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  }
+}

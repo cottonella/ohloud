@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Starts `nuxt dev` and signals "ready" once the server is listening,
+      // so debug configs can wait for it via preLaunchTask.
+      "label": "nuxt:dev",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": {
+        "owner": "nuxt",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Nuxt.*",
+          "endsPattern": ".*(Local:|localhost:3000).*"
+        }
+      }
+    },
+    {
+      // One-shot dev build of the Electron main/preload (TypeScript -> dist).
+      "label": "electron:build:dev",
+      "type": "shell",
+      "command": "npx vite build --mode development --config electron/vite.config.ts",
+      "problemMatcher": []
+    },
+    {
+      // preLaunchTask for debugging: build electron + start the dev server.
+      "label": "debug:prepare",
+      "dependsOn": ["electron:build:dev", "nuxt:dev"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
