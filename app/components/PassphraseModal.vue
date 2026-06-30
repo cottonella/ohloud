@@ -51,8 +51,8 @@ function submit() {
         </div>
 
         <form class="mt-4 space-y-3" @submit.prevent="submit">
-          <label class="input input-bordered flex items-center gap-2">
-            <span class="text-base">🔑</span>
+          <label class="input input-bordered flex w-full items-center gap-2">
+            <span class="w-5 text-center">🔑</span>
             <input
               ref="inputEl"
               v-model="pass"
@@ -66,14 +66,16 @@ function submit() {
             </button>
           </label>
 
-          <input
-            v-if="confirm"
-            v-model="repeat"
-            :type="show ? 'text' : 'password'"
-            class="input input-bordered w-full"
-            placeholder="confirm key"
-            autocomplete="off"
-          >
+          <label v-if="confirm" class="input input-bordered flex w-full items-center gap-2">
+            <span class="w-5 text-center">🔁</span>
+            <input
+              v-model="repeat"
+              :type="show ? 'text' : 'password'"
+              class="grow"
+              placeholder="confirm key"
+              autocomplete="off"
+            >
+          </label>
           <p v-if="mismatch" class="text-error text-xs">
             Keys don't match.
           </p>
