@@ -2,6 +2,8 @@
 // detector. Correlating against the known sweep gives a sharp timing peak even
 // in reverberant rooms and at an unknown start time (FORMAT.md B.2).
 
+import { applyRaisedCosineRamp } from './window'
+
 /** Synthesize a linear chirp from f0 → f1 over `length` samples. */
 export function synthChirp(
   f0: number,
@@ -9,6 +11,7 @@ export function synthChirp(
   length: number,
   sampleRate: number,
   amp = 1,
+  ramp = Math.floor(length / 16),
 ): Float32Array {
   const out = new Float32Array(length)
   const T = length / sampleRate
@@ -17,6 +20,8 @@ export function synthChirp(
     const t = i / sampleRate
     out[i] = amp * Math.sin(2 * Math.PI * (f0 * t + rate * t * t))
   }
+  if (ramp > 0)
+    applyRaisedCosineRamp(out, ramp)
   return out
 }
 
