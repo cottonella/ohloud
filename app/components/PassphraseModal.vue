@@ -28,6 +28,28 @@ watch(() => props.open, (isOpen) => {
 const mismatch = computed(() => props.confirm && repeat.value.length > 0 && pass.value !== repeat.value)
 const valid = computed(() => pass.value.length > 0 && (!props.confirm || pass.value === repeat.value))
 
+// Lightweight passphrase strength estimate (length + character variety).
+const strength = computed(() => {
+  const pw = pass.value
+  let s = 0
+  if (pw.length >= 8)
+    s++
+  if (pw.length >= 12)
+    s++
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw))
+    s++
+  if (/\d/.test(pw))
+    s++
+  if (/[^a-z0-9]/i.test(pw))
+    s++
+  if (pw.length < 8)
+    s = Math.min(s, 1) // short keys can never rank above "weak"
+  s = Math.min(s, 4)
+  const labels = ['too short', 'weak', 'fair', 'good', 'strong']
+  const colors = ['var(--color-error)', 'var(--color-error)', 'var(--color-warning)', 'var(--color-success)', 'var(--color-success)']
+  return { score: s, label: labels[s]!, color: colors[s]! }
+})
+
 function submit() {
   if (valid.value)
     emit('submit', pass.value)
@@ -65,6 +87,13 @@ function submit() {
               {{ show ? '🙈' : '👁️' }}
             </button>
           </label>
+
+          <div v-if="confirm && pass" class="strength">
+            <div class="strength-track">
+              <div class="strength-fill" :style="{ width: `${(strength.score + 1) * 20}%`, background: strength.color }" />
+            </div>
+            <span class="text-xs font-medium" :style="{ color: strength.color }">{{ strength.label }}</span>
+          </div>
 
           <label v-if="confirm" class="input input-bordered flex w-full items-center gap-2">
             <span class="w-5 text-center">🔁</span>
@@ -112,6 +141,26 @@ function submit() {
   border-radius: var(--radius-box);
   background: var(--color-base-100);
   box-shadow: 0 20px 50px oklch(40% 0.06 60 / 0.3);
+}
+.strength {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.2rem;
+}
+.strength-track {
+  flex: 1;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-base-300);
+  overflow: hidden;
+}
+.strength-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition:
+    width 0.25s ease,
+    background 0.25s ease;
 }
 .pp-enter-active,
 .pp-leave-active {
