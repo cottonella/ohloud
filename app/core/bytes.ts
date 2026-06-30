@@ -33,6 +33,12 @@ export function bytesEqualCT(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0
 }
 
+/** Best-effort zeroization of sensitive byte buffers (JS can't guarantee it). */
+export function wipe(...arrays: Uint8Array[]): void {
+  for (const a of arrays)
+    a.fill(0)
+}
+
 export function toHex(b: Uint8Array): string {
   let s = ''
   for (let i = 0; i < b.length; i++)

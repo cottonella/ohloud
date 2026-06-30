@@ -1,4 +1,4 @@
-import { utf8Decode } from '../bytes'
+import { utf8Decode, wipe } from '../bytes'
 import {
   FLAG_COMPRESSED,
   HEADER_AAD_LEN,
@@ -40,10 +40,13 @@ export function open(container: Uint8Array, passphrase: string): OpenResult {
     throw new CorruptedError('ciphertext length mismatch')
 
   const masterKey = deriveMasterKey(passphrase, h.salt, h.kdf)
-  if (!verifyCommitment(masterKey, h.commit))
+  if (!verifyCommitment(masterKey, h.commit)) {
+    wipe(masterKey)
     throw new WrongPassphraseError()
+  }
 
   const encKey = deriveEncKey(masterKey)
+  wipe(masterKey)
   const aad = headerBytes.subarray(0, HEADER_AAD_LEN)
 
   let plaintext: Uint8Array
@@ -52,6 +55,9 @@ export function open(container: Uint8Array, passphrase: string): OpenResult {
   }
   catch {
     throw new CorruptedError('authentication failed (corrupted or tampered)')
+  }
+  finally {
+    wipe(encKey)
   }
 
   if (h.flags & FLAG_COMPRESSED) {

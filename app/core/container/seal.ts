@@ -1,7 +1,7 @@
 import type { KdfParams } from '../constants'
 import type { InnerRecord } from './record'
 import { randomBytes } from '@noble/ciphers/utils.js'
-import { concat } from '../bytes'
+import { concat, wipe } from '../bytes'
 import {
   CONTAINER_VERSION,
   DEFAULT_KDF,
@@ -67,6 +67,9 @@ export function seal(record: InnerRecord, passphrase: string, opts: SealOptions 
 
   const aad = header.subarray(0, HEADER_AAD_LEN)
   const ciphertext = aeadSeal(encKey, nonce, aad, plaintext)
+
+  // Best-effort: scrub key material and the plaintext copy we own.
+  wipe(masterKey, encKey, plaintext)
 
   return concat(header, ciphertext)
 }
