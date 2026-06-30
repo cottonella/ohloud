@@ -15,9 +15,16 @@ export const CHIRP_F1 = 8000
 export const CHIRP_LEN = Math.round(0.15 * SAMPLE_RATE) // 7200 samples (150 ms)
 const CHIRP_AMP = 0.8
 
-const SYM = symbolSamples(DEFAULT_MFSK)
+export const MFSK_SYMBOL_SAMPLES = symbolSamples(DEFAULT_MFSK)
+const SYM = MFSK_SYMBOL_SAMPLES
 const HEADER_SYMBOLS = Math.ceil(HEADER_CODED_LEN / bytesPerSymbol(DEFAULT_MFSK))
+export const HEADER_SAMPLES = HEADER_SYMBOLS * SYM
 const RS_BLOCK = 255
+
+/** Total payload PCM samples a frame with `blockCount` FEC blocks occupies. */
+export function payloadSamples(blockCount: number): number {
+  return Math.ceil((RS_BLOCK * blockCount) / bytesPerSymbol(DEFAULT_MFSK)) * SYM
+}
 
 function concatFloat32(parts: Float32Array[]): Float32Array {
   let total = 0
@@ -34,6 +41,32 @@ function concatFloat32(parts: Float32Array[]): Float32Array {
 
 function chirpTemplate(): Float32Array {
   return synthChirp(CHIRP_F0, CHIRP_F1, CHIRP_LEN, SAMPLE_RATE)
+}
+
+/**
+ * Locate the sync chirp within `pcm[searchStart..searchEnd]`. Returns its
+ * absolute offset and a normalized correlation score in [0, 1] (used by the
+ * streaming receiver to confirm a real chirp vs. noise).
+ */
+export function locateChirp(pcm: Float32Array, searchStart = 0, searchEnd = pcm.length): { offset: number, score: number } {
+  const template = chirpTemplate()
+  const region = pcm.subarray(searchStart, Math.min(pcm.length, searchEnd))
+  if (region.length < template.length)
+    return { offset: searchStart, score: 0 }
+
+  const { offset } = crossCorrelate(region, template)
+  const abs = searchStart + offset
+
+  let dot = 0
+  let sE = 0
+  let tE = 0
+  for (let i = 0; i < template.length; i++) {
+    const s = pcm[abs + i] ?? 0
+    dot += s * template[i]!
+    sE += s * s
+    tE += template[i]! * template[i]!
+  }
+  return { offset: abs, score: dot / (Math.sqrt(sE) * Math.sqrt(tE) + 1e-12) }
 }
 
 /** Build the transmittable PCM frame from the RS-coded header and FEC payload. */
