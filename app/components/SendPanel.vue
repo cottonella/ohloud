@@ -126,14 +126,13 @@ onBeforeUnmount(() => {
   <div class="space-y-4">
     <!-- Composer -->
     <div v-if="stage === 'idle' || stage === 'error'" class="space-y-4">
-      <div role="tablist" class="tabs tabs-boxed bg-base-200 w-fit">
-        <button class="tab" :class="{ 'tab-active': mode === 'text' }" @click="mode = 'text'">
-          📝 Text
-        </button>
-        <button class="tab" :class="{ 'tab-active': mode === 'file' }" @click="mode = 'file'">
-          📎 File
-        </button>
-      </div>
+      <PillTabs
+        v-model="mode"
+        :options="[
+          { value: 'text', label: '📝 Text' },
+          { value: 'file', label: '📎 File' },
+        ]"
+      />
 
       <textarea
         v-if="mode === 'text'"

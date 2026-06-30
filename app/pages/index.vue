@@ -18,14 +18,15 @@ const tab = ref<'send' | 'receive'>('send')
 
     <div class="card w-full max-w-lg bg-base-100 shadow-xl">
       <div class="card-body">
-        <div role="tablist" class="tabs tabs-boxed bg-base-200 mb-2 grid grid-cols-2">
-          <button class="tab gap-1" :class="{ 'tab-active': tab === 'send' }" @click="tab = 'send'">
-            📤 Send
-          </button>
-          <button class="tab gap-1" :class="{ 'tab-active': tab === 'receive' }" @click="tab = 'receive'">
-            📥 Receive
-          </button>
-        </div>
+        <PillTabs
+          v-model="tab"
+          block
+          class="mb-2"
+          :options="[
+            { value: 'send', label: '📤 Send' },
+            { value: 'receive', label: '📥 Receive' },
+          ]"
+        />
 
         <Transition name="swap" mode="out-in">
           <SendPanel v-if="tab === 'send'" key="send" />
