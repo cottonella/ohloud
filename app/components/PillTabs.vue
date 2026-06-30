@@ -45,7 +45,7 @@ const activeIndex = computed(() =>
   grid-template-columns: repeat(var(--count), 1fr);
   padding: 0.3rem;
   background: var(--color-base-200);
-  border-radius: var(--radius-box);
+  border-radius: var(--radius-field);
 }
 .pill-tabs.is-block {
   display: grid;
@@ -59,7 +59,7 @@ const activeIndex = computed(() =>
   width: calc((100% - 0.6rem) / var(--count));
   transform: translateX(calc(var(--active) * 100%));
   background: var(--color-base-100);
-  border-radius: calc(var(--radius-box) - 0.3rem);
+  border-radius: calc(var(--radius-field) - 0.3rem);
   box-shadow: 0 2px 8px oklch(50% 0.05 60 / 0.18);
   transition: transform 0.32s cubic-bezier(0.34, 1.45, 0.5, 1);
 }
@@ -69,7 +69,7 @@ const activeIndex = computed(() =>
   padding: 0.55rem 1rem;
   border: none;
   background: transparent;
-  border-radius: calc(var(--radius-box) - 0.3rem);
+  border-radius: calc(var(--radius-field) - 0.3rem);
   font-weight: 600;
   color: var(--color-base-content);
   opacity: 0.55;
