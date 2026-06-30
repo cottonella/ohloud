@@ -2,6 +2,10 @@
 // Speech DSP (echo cancel / AGC / noise suppression) is disabled — it would
 // destroy the tones. Mic blocks are pulled via an inline AudioWorklet (defined
 // as a Blob so there's no separate file to bundle).
+//
+// The live level meter is driven by a SEPARATE AnalyserNode read at ~60 fps, so
+// it stays smooth and accurate even while the decoder is busy searching for the
+// chirp. The worklet batches samples (~2048) to keep message traffic light.
 
 import type { WireHeader } from '../protocol/wire-header'
 import { FrameReceiver } from '../protocol/receiver'
@@ -9,10 +13,22 @@ import { rms } from './level'
 
 const CAPTURE_WORKLET = `
 class OhloudCapture extends AudioWorkletProcessor {
+  constructor() {
+    super()
+    this._buf = new Float32Array(2048)
+    this._n = 0
+  }
   process(inputs) {
-    const channel = inputs[0] && inputs[0][0]
-    if (channel && channel.length)
-      this.port.postMessage(channel.slice(0))
+    const ch = inputs[0] && inputs[0][0]
+    if (ch && ch.length) {
+      for (let i = 0; i < ch.length; i++) {
+        this._buf[this._n++] = ch[i]
+        if (this._n === this._buf.length) {
+          this.port.postMessage(this._buf.slice(0))
+          this._n = 0
+        }
+      }
+    }
     return true
   }
 }
@@ -48,10 +64,29 @@ export async function startListening(opts: ListenOptions = {}): Promise<ListenHa
   const source = ctx.createMediaStreamSource(stream)
   const node = new AudioWorkletNode(ctx, 'ohloud-capture')
 
+  // Smooth level meter: tap an AnalyserNode and read it on rAF (fast attack,
+  // slow release) — independent of the decode work.
+  const analyser = ctx.createAnalyser()
+  analyser.fftSize = 2048
+  source.connect(analyser)
+  const levelBuf = new Float32Array(analyser.fftSize)
+  let display = 0
+  let raf = 0
+  const pumpLevel = (): void => {
+    analyser.getFloatTimeDomainData(levelBuf)
+    const r = rms(levelBuf)
+    display = r > display ? r : display * 0.82 + r * 0.18
+    opts.onLevel?.(display)
+    raf = requestAnimationFrame(pumpLevel)
+  }
+  raf = requestAnimationFrame(pumpLevel)
+
   const stopAll = (): void => {
     try {
+      cancelAnimationFrame(raf)
       node.port.onmessage = null
       source.disconnect()
+      analyser.disconnect()
       node.disconnect()
       for (const track of stream.getTracks())
         track.stop()
@@ -77,9 +112,7 @@ export async function startListening(opts: ListenOptions = {}): Promise<ListenHa
   }, ctx.sampleRate)
 
   node.port.onmessage = (event: MessageEvent) => {
-    const block = event.data as Float32Array
-    opts.onLevel?.(rms(block))
-    receiver.feed(block)
+    receiver.feed(event.data as Float32Array)
   }
 
   source.connect(node)

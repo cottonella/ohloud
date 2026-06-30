@@ -32,9 +32,11 @@ export class FrameReceiver {
   private state: State = 'searching'
   private chirpAbs = -1
   private frameSamples = 0
+  private lastSearchLen = 0
   private readonly chirpLen: number
   private readonly headerLen: number
   private readonly syncWindow: number
+  private readonly searchStride: number
 
   constructor(
     private readonly events: FrameReceiverEvents = {},
@@ -45,6 +47,8 @@ export class FrameReceiver {
     // Window searched for the chirp each tick — large enough to always contain
     // a just-completed chirp+header, small enough to keep correlation cheap.
     this.syncWindow = 2 * (this.chirpLen + this.headerLen)
+    // Don't re-run the (expensive) chirp correlation more than ~13×/s.
+    this.searchStride = Math.max(2048, Math.floor(this.chirpLen / 2))
   }
 
   get isDone(): boolean {
@@ -57,6 +61,7 @@ export class FrameReceiver {
     this.state = 'searching'
     this.chirpAbs = -1
     this.frameSamples = 0
+    this.lastSearchLen = 0
   }
 
   feed(chunk: Float32Array): void {
@@ -87,6 +92,9 @@ export class FrameReceiver {
     if (this.state === 'searching') {
       if (this.len < this.chirpLen + this.headerLen)
         return
+      if (this.len - this.lastSearchLen < this.searchStride)
+        return
+      this.lastSearchLen = this.len
       const start = Math.max(0, this.len - this.syncWindow)
       const { offset, score } = locateChirp(this.view(), this.sampleRate, start, this.len)
       if (score < SYNC_SCORE_MIN)
