@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodePcm, encodeText } from '../ohloud'
-import { CHIRP_LEN, HEADER_SAMPLES } from './frame'
+import { chirpSamples, headerSamples } from './frame'
 import { FrameReceiver } from './receiver'
 
 const FAST = { memLog2: 12, time: 1, lanes: 1 }
@@ -50,7 +50,9 @@ describe('streaming FrameReceiver', () => {
     const { pcm } = encodeText('x', PW, { kdf: FAST })
     const buf = pcm.slice()
     // Wipe the entire header span (after the chirp) so RS cannot recover it.
-    for (let i = CHIRP_LEN; i < CHIRP_LEN + HEADER_SAMPLES; i++)
+    const chirp = chirpSamples(48000)
+    const header = headerSamples(48000)
+    for (let i = chirp; i < chirp + header; i++)
       buf[i] = 0
     let errored = false
     const rx = new FrameReceiver({

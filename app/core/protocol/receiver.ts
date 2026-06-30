@@ -1,17 +1,18 @@
 // Streaming frame receiver: fed mic audio in chunks, it searches a sliding
 // window for the sync chirp, reads the RS-protected header to learn the exact
 // frame length, then emits the complete frame PCM once enough has arrived.
-// Pure logic (no Web Audio) so it's fully testable by feeding chunks.
+// Sample-rate aware (uses the capturing AudioContext's rate). Pure logic, so
+// fully testable by feeding chunks.
 
 import type { WireHeader } from './wire-header'
-import { demodulateMfsk } from '../dsp/mfsk'
-import { CHIRP_LEN, HEADER_SAMPLES, locateChirp, payloadSamples } from './frame'
+import { demodulateMfsk, mfskConfig } from '../dsp/mfsk'
+import { chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, locateChirp, payloadSamples } from './frame'
 import { decodeWireHeader, HEADER_CODED_LEN } from './wire-header'
 
 export interface FrameReceiverEvents {
   /** Chirp found at this absolute sample offset. */
   onSync?: (offset: number) => void
-  /** Header decoded; frame will be `frameSamples` long (≈ frameSamples/sampleRate s). */
+  /** Header decoded; full frame will be `frameSamples` long. */
   onHeader?: (header: WireHeader, frameSamples: number) => void
   /** Payload accumulation progress. */
   onProgress?: (received: number, total: number) => void
@@ -24,9 +25,6 @@ export interface FrameReceiverEvents {
 type State = 'searching' | 'header' | 'payload' | 'done'
 
 const SYNC_SCORE_MIN = 0.4
-// Window searched for the chirp each tick — large enough to always contain a
-// just-completed chirp+header, small enough to keep correlation cheap.
-const SYNC_WINDOW = 2 * (CHIRP_LEN + HEADER_SAMPLES)
 
 export class FrameReceiver {
   private buf = new Float32Array(0)
@@ -34,8 +32,20 @@ export class FrameReceiver {
   private state: State = 'searching'
   private chirpAbs = -1
   private frameSamples = 0
+  private readonly chirpLen: number
+  private readonly headerLen: number
+  private readonly syncWindow: number
 
-  constructor(private readonly events: FrameReceiverEvents = {}) {}
+  constructor(
+    private readonly events: FrameReceiverEvents = {},
+    private readonly sampleRate: number = DEFAULT_SAMPLE_RATE,
+  ) {
+    this.chirpLen = chirpSamples(sampleRate)
+    this.headerLen = headerSamples(sampleRate)
+    // Window searched for the chirp each tick — large enough to always contain
+    // a just-completed chirp+header, small enough to keep correlation cheap.
+    this.syncWindow = 2 * (this.chirpLen + this.headerLen)
+  }
 
   get isDone(): boolean {
     return this.state === 'done'
@@ -75,10 +85,10 @@ export class FrameReceiver {
 
   private process(): void {
     if (this.state === 'searching') {
-      if (this.len < CHIRP_LEN + HEADER_SAMPLES)
+      if (this.len < this.chirpLen + this.headerLen)
         return
-      const start = Math.max(0, this.len - SYNC_WINDOW)
-      const { offset, score } = locateChirp(this.view(), start, this.len)
+      const start = Math.max(0, this.len - this.syncWindow)
+      const { offset, score } = locateChirp(this.view(), this.sampleRate, start, this.len)
       if (score < SYNC_SCORE_MIN)
         return
       this.chirpAbs = offset
@@ -87,10 +97,10 @@ export class FrameReceiver {
     }
 
     if (this.state === 'header') {
-      const headerEnd = this.chirpAbs + CHIRP_LEN + HEADER_SAMPLES
+      const headerEnd = this.chirpAbs + this.chirpLen + this.headerLen
       if (this.len < headerEnd)
         return
-      const coded = demodulateMfsk(this.view().subarray(this.chirpAbs + CHIRP_LEN, headerEnd), HEADER_CODED_LEN)
+      const coded = demodulateMfsk(this.view().subarray(this.chirpAbs + this.chirpLen, headerEnd), HEADER_CODED_LEN, mfskConfig(this.sampleRate))
       let header: WireHeader
       try {
         header = decodeWireHeader(coded)
@@ -100,7 +110,7 @@ export class FrameReceiver {
         this.events.onError?.(error as Error)
         return
       }
-      this.frameSamples = CHIRP_LEN + HEADER_SAMPLES + payloadSamples(header.blockCount)
+      this.frameSamples = this.chirpLen + this.headerLen + payloadSamples(this.sampleRate, header.blockCount)
       this.state = 'payload'
       this.events.onHeader?.(header, this.frameSamples)
     }

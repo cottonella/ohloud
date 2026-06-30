@@ -67,7 +67,7 @@ describe('frame assemble/parse', () => {
       pcm[i] = pcm[i]! + ((x >>> 10) / 0x1FFFFF - 0.5) * 0.03
     }
 
-    const parsed = parseFrame(pcm, 8192)
+    const parsed = parseFrame(pcm, 48000, 8192)
     expect(parsed.chirpOffset).toBeGreaterThan(4000)
     expect(parsed.chirpOffset).toBeLessThan(4200)
     expect(parsed.header.blockCount).toBe(meta.blockCount)

@@ -44,6 +44,25 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
     expect(() => decodePcm(heard, 'wrong-key', { maxSearchSamples: 4096 })).toThrow(WrongPassphraseError)
   })
 
+  it('interoperates across sample rates (48 kHz sender → 44.1 kHz receiver)', () => {
+    const msg = 'cross-device secret 🐻'
+    const { pcm } = encodeText(msg, PW, { kdf: FAST, sampleRate: 48000 })
+
+    // Simulate the air → a 44.1 kHz mic: linear resample 48000 → 44100.
+    const ratio = 44100 / 48000
+    const outLen = Math.floor(pcm.length * ratio)
+    const resampled = new Float32Array(outLen)
+    for (let i = 0; i < outLen; i++) {
+      const src = i / ratio
+      const j = Math.floor(src)
+      const frac = src - j
+      resampled[i] = (pcm[j] ?? 0) * (1 - frac) + (pcm[j + 1] ?? 0) * frac
+    }
+
+    const out = decodePcm(resampled, PW, { sampleRate: 44100 })
+    expect(out.text).toBe(msg)
+  })
+
   it('reports a destroyed payload as corruption', () => {
     const { pcm } = encodeText('secret', PW, { kdf: FAST })
     // Wipe the second half (mostly payload); header near the start survives.

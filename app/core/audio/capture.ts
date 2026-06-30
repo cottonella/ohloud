@@ -74,7 +74,7 @@ export async function startListening(opts: ListenOptions = {}): Promise<ListenHa
       stopAll()
       opts.onComplete?.(frame, ctx.sampleRate)
     },
-  })
+  }, ctx.sampleRate)
 
   node.port.onmessage = (event: MessageEvent) => {
     const block = event.data as Float32Array
