@@ -9,11 +9,12 @@ import type { KdfParams } from './constants'
 import type { OpenResult } from './container/open'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesEqualCT } from './bytes'
+import { HEADER_LEN, TAG_LEN } from './constants'
 import { open } from './container/open'
 import { sealFile, sealText } from './container/text'
 import { CorruptedError, UnsupportedError } from './errors'
 import { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
-import { assembleFrame, DEFAULT_SAMPLE_RATE, parseFrame } from './protocol/frame'
+import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, parseFrame, payloadSamples } from './protocol/frame'
 import { encodeWireHeader, FEC_RS, MODE_MFSK, WIRE_VERSION } from './protocol/wire-header'
 
 export interface EncodeOptions {
@@ -38,6 +39,20 @@ export interface EncodeResult {
 
 function tailHash(blob: Uint8Array): Uint8Array {
   return sha256(blob).subarray(0, 16)
+}
+
+const FEC_PAYLOAD_PER_BLOCK = 255 - 64 - 2 // default nsym=64 + 2-byte block CRC
+
+/**
+ * Estimate transmission length in seconds for a payload of `payloadBytes`,
+ * without encrypting (drives the UI's "how long" indicator). Ignores
+ * compression, so it's an upper bound for text.
+ */
+export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sampleRate = DEFAULT_SAMPLE_RATE): number {
+  const recordLen = 1 + 2 + filenameBytes + 8 + 32 + payloadBytes
+  const blobLen = HEADER_LEN + recordLen + TAG_LEN
+  const blockCount = Math.max(1, Math.ceil(blobLen / FEC_PAYLOAD_PER_BLOCK))
+  return (chirpSamples(sampleRate) + headerSamples(sampleRate) + payloadSamples(sampleRate, blockCount)) / sampleRate
 }
 
 function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number): EncodeResult {

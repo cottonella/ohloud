@@ -1,2 +1,141 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
+
+/* Cuddly pastel "teddy" theme. */
+@plugin 'daisyui/theme' {
+  name: 'ohloud';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(98% 0.015 85);
+  --color-base-200: oklch(95% 0.025 80);
+  --color-base-300: oklch(90% 0.04 75);
+  --color-base-content: oklch(34% 0.05 55);
+
+  --color-primary: oklch(80% 0.11 62);
+  --color-primary-content: oklch(28% 0.07 55);
+  --color-secondary: oklch(86% 0.08 350);
+  --color-secondary-content: oklch(32% 0.08 350);
+  --color-accent: oklch(83% 0.09 230);
+  --color-accent-content: oklch(28% 0.08 240);
+  --color-neutral: oklch(48% 0.06 60);
+  --color-neutral-content: oklch(97% 0.01 85);
+
+  --color-info: oklch(80% 0.09 230);
+  --color-info-content: oklch(28% 0.08 240);
+  --color-success: oklch(82% 0.13 150);
+  --color-success-content: oklch(28% 0.09 150);
+  --color-warning: oklch(86% 0.13 85);
+  --color-warning-content: oklch(34% 0.09 70);
+  --color-error: oklch(72% 0.17 20);
+  --color-error-content: oklch(98% 0.01 20);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.9rem;
+  --radius-box: 1.6rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.28rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, oklch(96% 0.05 60 / 0.7), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, oklch(94% 0.06 350 / 0.5), transparent 60%), var(--color-base-200);
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.02);
+  }
+}
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@keyframes note-rise {
+  0% {
+    transform: translate(0, 0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 14px), -40px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.anim-float {
+  animation: float 3.2s ease-in-out infinite;
+}
+.anim-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+.anim-bob {
+  animation: bob 1.4s ease-in-out infinite;
+}
+.anim-pop {
+  animation: pop-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-float,
+  .anim-wiggle,
+  .anim-bob,
+  .anim-pop {
+    animation: none;
+  }
+}

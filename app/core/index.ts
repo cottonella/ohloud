@@ -32,7 +32,7 @@ export { CorruptedError, FormatError, OhloudError, UnsupportedError, WrongPassph
 export { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
 export type { FecMeta, FecParams } from './fec/blocks'
 // High-level pipeline (primary API)
-export { decodePcm, encodeFile, encodeText } from './ohloud'
+export { decodePcm, encodeFile, encodeText, estimateDurationSec } from './ohloud'
 export type { DecodeOptions, EncodeOptions, EncodeResult } from './ohloud'
 export { FrameReceiver } from './protocol/receiver'
 export type { FrameReceiverEvents } from './protocol/receiver'

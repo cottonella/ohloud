@@ -11,7 +11,19 @@ export default defineNuxtConfig({
   ssr: false,
 
   css: ['~/assets/css/main.css'],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: [
+        '@noble/ciphers/chacha.js',
+        '@noble/ciphers/utils.js',
+        '@noble/hashes/argon2.js',
+        '@noble/hashes/hkdf.js',
+        '@noble/hashes/sha2.js',
+        'fflate',
+      ],
+    },
+  },
 
   app: {
     head: {
