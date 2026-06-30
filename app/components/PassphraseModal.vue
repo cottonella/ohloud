@@ -35,9 +35,9 @@ function submit() {
 </script>
 
 <template>
-  <Transition name="modal">
-    <div v-if="open" class="modal-backdrop" @click.self="emit('close')">
-      <div class="modal-card anim-pop">
+  <Transition name="pp">
+    <div v-if="open" class="pp-backdrop" @click.self="emit('close')">
+      <div class="pp-card anim-pop">
         <div class="flex items-center gap-3">
           <TeddyBear :size="56" mood="idle" />
           <div>
@@ -93,7 +93,7 @@ function submit() {
 </template>
 
 <style scoped>
-.modal-backdrop {
+.pp-backdrop {
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -103,7 +103,7 @@ function submit() {
   background: oklch(40% 0.05 60 / 0.4);
   backdrop-filter: blur(3px);
 }
-.modal-card {
+.pp-card {
   width: 100%;
   max-width: 24rem;
   padding: 1.5rem;
@@ -111,12 +111,12 @@ function submit() {
   background: var(--color-base-100);
   box-shadow: 0 20px 50px oklch(40% 0.06 60 / 0.3);
 }
-.modal-enter-active,
-.modal-leave-active {
+.pp-enter-active,
+.pp-leave-active {
   transition: opacity 0.2s ease;
 }
-.modal-enter-from,
-.modal-leave-to {
+.pp-enter-from,
+.pp-leave-to {
   opacity: 0;
 }
 </style>
