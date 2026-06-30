@@ -12,6 +12,10 @@ export type { InnerRecord } from './container/record'
 export { seal } from './container/seal'
 export type { SealOptions } from './container/seal'
 export { sealFile, sealText } from './container/text'
+// DSP / modem
+export { DEFAULT_MFSK, demodulateMfsk, modulateMfsk } from './dsp/mfsk'
+
+export type { MfskConfig } from './dsp/mfsk'
 export { CorruptedError, FormatError, OhloudError, UnsupportedError, WrongPassphraseError } from './errors'
 
 // FEC (channel coding)

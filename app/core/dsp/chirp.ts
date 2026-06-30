@@ -1,0 +1,58 @@
+// Linear chirp (frequency sweep) for the sync preamble, plus a matched-filter
+// detector. Correlating against the known sweep gives a sharp timing peak even
+// in reverberant rooms and at an unknown start time (FORMAT.md B.2).
+
+/** Synthesize a linear chirp from f0 → f1 over `length` samples. */
+export function synthChirp(
+  f0: number,
+  f1: number,
+  length: number,
+  sampleRate: number,
+  amp = 1,
+): Float32Array {
+  const out = new Float32Array(length)
+  const T = length / sampleRate
+  const rate = (f1 - f0) / (2 * T)
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate
+    out[i] = amp * Math.sin(2 * Math.PI * (f0 * t + rate * t * t))
+  }
+  return out
+}
+
+export interface MatchResult {
+  /** Best start offset of the template within the signal. */
+  offset: number
+  /** Normalized correlation score in [-1, 1] at that offset. */
+  score: number
+}
+
+/**
+ * Slide `template` across `signal` and return the offset of peak normalized
+ * cross-correlation. Score ≈ 1 at a clean match.
+ */
+export function matchedFilter(signal: Float32Array, template: Float32Array): MatchResult {
+  let tEnergy = 0
+  for (let i = 0; i < template.length; i++)
+    tEnergy += template[i]! * template[i]!
+  const tNorm = Math.sqrt(tEnergy) || 1e-12
+
+  let bestOffset = -1
+  let bestScore = Number.NEGATIVE_INFINITY
+  const last = signal.length - template.length
+  for (let off = 0; off <= last; off++) {
+    let dot = 0
+    let sEnergy = 0
+    for (let i = 0; i < template.length; i++) {
+      const s = signal[off + i]!
+      dot += s * template[i]!
+      sEnergy += s * s
+    }
+    const score = dot / (Math.sqrt(sEnergy) * tNorm + 1e-12)
+    if (score > bestScore) {
+      bestScore = score
+      bestOffset = off
+    }
+  }
+  return { offset: bestOffset, score: bestScore }
+}
