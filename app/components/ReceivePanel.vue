@@ -4,6 +4,7 @@ import { startListening } from '~/core'
 type Stage = 'idle' | 'listening' | 'receiving' | 'captured' | 'decoding' | 'done' | 'error'
 
 const codec = useCodec()
+const { celebrate } = useConfetti()
 
 const stage = ref<Stage>('idle')
 const micLevel = ref(0)
@@ -72,6 +73,7 @@ async function onKey(passphrase: string) {
   try {
     result.value = await codec.decode(captured.pcm.slice(), passphrase, captured.sampleRate)
     stage.value = 'done'
+    void celebrate()
   }
   catch (e) {
     const code = (e as Error & { code?: string }).code
