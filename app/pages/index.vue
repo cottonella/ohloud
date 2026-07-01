@@ -64,8 +64,12 @@ const showTech = ref(false)
         </div>
       </details>
 
-      <footer class="border-base-300/50 mt-3 border-t pt-3 text-center text-xs opacity-60">
-        <AppIcon name="lock" :size="13" /> encrypted with a password · <AppIcon name="heart" :size="13" /> made with care
+      <footer class="border-base-300/50 mt-3 flex flex-wrap items-center justify-center gap-2 border-t pt-3">
+        <span class="pill pill-soft">Made with <AppIcon name="heart" :size="14" /></span>
+        <span class="pill pill-soft">free forever</span>
+        <a href="https://ko-fi.com/cottonella" target="_blank" rel="noopener noreferrer" class="pill pill-kofi">
+          <svg class="kofi-cup" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.4 6.7h11.2V14a4 4 0 0 1-4 4h-3.2a4 4 0 0 1-4-4Z" fill="#fff" /><path d="M15.6 8.9a2.8 2.8 0 0 1 0 5.4" fill="none" /><path d="M10 15.05c-1.75-1.18-2.68-2.05-2.68-3.12 0-.82.62-1.4 1.35-1.4.62 0 1.05.33 1.33.77.28-.44.71-.77 1.33-.77.73 0 1.35.58 1.35 1.4 0 1.07-.93 1.94-2.68 3.12Z" fill="#e8324a" stroke="#1a1a1a" stroke-width="1" /></svg>Buy me a coffee
+        </a>
       </footer>
     </div>
   </main>
@@ -108,6 +112,38 @@ const showTech = ref(false)
   font-size: 0.82rem;
   line-height: 1.55;
   opacity: 0.9;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.32rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pill-soft {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  opacity: 0.7;
+}
+.pill-kofi {
+  background: #fcdfeb;
+  color: #b1436a;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgb(214 122 154 / 0.25);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.pill-kofi:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(214 122 154 / 0.35);
+}
+.kofi-cup {
+  width: 1.45em;
+  height: 1.45em;
 }
 .tech-enter-active,
 .tech-leave-active {
