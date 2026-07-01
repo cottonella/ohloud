@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "pwa-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", ".output/public", "-l", "4173"],
+      "port": 4173
     }
   ]
 }
