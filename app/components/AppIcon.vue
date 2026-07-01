@@ -21,6 +21,7 @@ const ICONS: Record<string, string> = {
   'download': '<path d="M12 4v10"/><path d="M8 10l4 4 4-4"/><path d="M5 19h14"/>',
   'upload': '<path d="M4 14v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 16V5"/><path d="M8 9l4-4 4 4"/>',
   'check': '<path d="M5 12.5l4.5 4.5L19 6.5"/>',
+  'play': '<path d="M8 5.5 19 12 8 18.5Z"/>',
   'repeat': '<path d="M17.5 8A6 6 0 0 0 7 9.2"/><path d="M6.5 4.5V9h4.5"/><path d="M6.5 16A6 6 0 0 0 17 14.8"/><path d="M17.5 19.5V15H13"/>',
 
   // ── content ──

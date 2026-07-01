@@ -114,8 +114,8 @@ function submit() {
               <button type="button" class="btn btn-ghost" @click="emit('close')">
                 Cancel
               </button>
-              <button type="submit" class="btn btn-primary" :disabled="!valid">
-                Continue
+              <button type="submit" class="btn btn-primary" :disabled="!valid" aria-label="Confirm">
+                <AppIcon name="check" :size="20" />
               </button>
             </div>
           </form>

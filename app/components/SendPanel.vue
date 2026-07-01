@@ -2,7 +2,7 @@
 import type { AudioOutput } from '~/core'
 import { estimateDurationSec, openAudioOutput } from '~/core'
 
-type Stage = 'idle' | 'encoding' | 'playing' | 'done' | 'error'
+type Stage = 'idle' | 'ready' | 'encoding' | 'playing' | 'done' | 'error'
 
 const codec = useCodec()
 
@@ -18,6 +18,7 @@ const errorMsg = ref('')
 const durationSec = ref(0)
 const outputRate = ref(0)
 const progress = ref(0)
+const pendingPass = ref('')
 
 let playback: { stop: () => void, finished: Promise<void> } | null = null
 let timer: ReturnType<typeof setInterval> | null = null
@@ -81,20 +82,29 @@ function clearTimer() {
   }
 }
 
-async function onKey(passphrase: string) {
+function onKey(passphrase: string) {
   passOpen.value = false
+  pendingPass.value = passphrase
+  errorMsg.value = ''
+  // Don't transmit yet — let the sender press Start so the receiver can begin
+  // listening first (otherwise the opening chirp is missed).
+  stage.value = 'ready'
+}
+
+// Encode + play. Reused by the initial Start and by Resend. Runs from a user
+// gesture so the AudioContext is allowed to open (required on iOS).
+async function start() {
   stage.value = 'encoding'
   errorMsg.value = ''
   let output: AudioOutput | null = null
   try {
-    // Open the speaker first (within this user gesture) and encode at its REAL
-    // rate. iOS often isn't 48 kHz; matching it avoids a lossy browser resample
-    // that would corrupt Fast/OFDM (Robust/MFSK survives it, Fast doesn't).
+    // Open the speaker first and encode at its REAL rate — iOS often isn't 48 kHz,
+    // and matching it avoids a lossy browser resample that would corrupt Fast/OFDM.
     output = await openAudioOutput()
     outputRate.value = output.sampleRate
     const reply = mode.value === 'text'
-      ? await codec.encodeText(text.value, passphrase, output.sampleRate, speed.value)
-      : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), passphrase, output.sampleRate, speed.value)
+      ? await codec.encodeText(text.value, pendingPass.value, output.sampleRate, speed.value)
+      : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), pendingPass.value, output.sampleRate, speed.value)
 
     durationSec.value = reply.durationSec
     stage.value = 'playing'
@@ -124,6 +134,7 @@ function stop() {
 function reset() {
   stage.value = 'idle'
   progress.value = 0
+  pendingPass.value = ''
 }
 
 onBeforeUnmount(() => {
@@ -199,7 +210,21 @@ onBeforeUnmount(() => {
     <!-- Working / playing -->
     <div v-else class="flex flex-col items-center gap-4 py-2 text-center">
       <TeddyBear :mood="teddyMood" :size="150" />
-      <template v-if="stage === 'encoding'">
+      <template v-if="stage === 'ready'">
+        <p class="font-medium">
+          Ready to send
+        </p>
+        <p class="max-w-xs text-sm opacity-70">
+          On the other device, open <b>Receive</b> and press <b>Listen</b>. Once it's listening, press Start.
+        </p>
+        <button class="btn btn-primary" @click="start">
+          <AppIcon name="play" /> Start
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="stage = 'idle'">
+          Back
+        </button>
+      </template>
+      <template v-else-if="stage === 'encoding'">
         <p class="font-medium">
           Wrapping it up safely…
         </p>
@@ -221,9 +246,17 @@ onBeforeUnmount(() => {
         <p class="text-success flex items-center justify-center gap-1.5 text-lg font-bold">
           Sent! <AppIcon name="sparkle" :size="18" />
         </p>
-        <button class="btn btn-primary btn-sm" @click="reset">
-          Send another
-        </button>
+        <p class="max-w-xs text-xs opacity-60">
+          Didn't arrive? Have them press Listen again, then resend the same secret.
+        </p>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button class="btn btn-primary btn-sm" @click="start">
+            <AppIcon name="repeat" /> Resend
+          </button>
+          <button class="btn btn-ghost btn-sm" @click="reset">
+            Send another
+          </button>
+        </div>
       </template>
     </div>
 
