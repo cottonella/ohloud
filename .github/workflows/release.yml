@@ -103,19 +103,23 @@ jobs:
         env:
           # Ship an unsigned build — don't try to auto-discover signing certs.
           CSC_IDENTITY_AUTO_DISCOVERY: false
-      - name: Stage the renamed artifact in /tmp (survives across steps)
+      # Stage into a workspace-relative dir, not /tmp: on the Windows runner
+      # Git Bash's /tmp and the Node upload-artifact action's /tmp resolve to
+      # different places, so the upload saw nothing. A relative path is resolved
+      # against GITHUB_WORKSPACE by both, so they agree on every OS.
+      - name: Stage the renamed artifact
         shell: bash
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          mkdir -p /tmp/artifacts
+          mkdir -p staging
           file=$(ls ${{ matrix.glob }} | head -n1)
-          dest="/tmp/artifacts/ohloud-${ver}-${{ matrix.platform }}.${{ matrix.ext }}"
+          dest="staging/ohloud-${ver}-${{ matrix.platform }}.${{ matrix.ext }}"
           cp "$file" "$dest"
           echo "Staged $file -> $dest"
       - uses: actions/upload-artifact@v4
         with:
           name: ohloud-${{ matrix.platform }}
-          path: /tmp/artifacts/*
+          path: staging/*
           if-no-files-found: error
 
   # ── Collect all three artifacts and publish one GitHub Release ────────────────
