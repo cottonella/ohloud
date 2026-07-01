@@ -27,7 +27,7 @@ const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 :
 const estimate = computed(() => {
   if (mode.value === 'text') {
     const bytes = new TextEncoder().encode(text.value).length
-    return estimateDurationSec(bytes, 17, 48000, speed.value)
+    return estimateDurationSec(bytes, 17, 48000, speed.value, 0.25)
   }
   return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value, 0.25) : 0
 })

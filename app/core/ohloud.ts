@@ -37,7 +37,7 @@ export interface EncodeOptions {
   sampleRate?: number
   /** Transmission speed/robustness tier (default `'robust'`). */
   mode?: TransmitMode
-  /** Fraction of RaptorQ repair blocks so lost blocks heal (default 0 for text, 0.25 for files). */
+  /** Fraction of RaptorQ repair blocks so lost blocks heal (default 0.25; set 0 to disable). */
   repair?: number
 }
 
@@ -89,7 +89,7 @@ function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode:
 /** Encode a UTF-8 text message into a transmittable PCM frame. */
 export function encodeText(text: string, passphrase: string, opts: EncodeOptions = {}): EncodeResult {
   const blob = sealText(text, passphrase, { kdf: opts.kdf, compress: opts.compress })
-  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust', opts.repair ?? 0)
+  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust', opts.repair ?? 0.25)
 }
 
 /** Encode arbitrary file bytes into a transmittable PCM frame. */
