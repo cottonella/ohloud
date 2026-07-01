@@ -195,7 +195,7 @@ onBeforeUnmount(() => {
 
       <div class="flex items-center justify-between">
         <div class="text-sm opacity-70">
-          <span v-if="hasInput">Sound length: <span class="badge badge-accent badge-sm">{{ estimateLabel }}</span></span>
+          <span v-if="hasInput">Transmission time: <span class="badge badge-accent badge-sm">{{ estimateLabel }}</span></span>
           <span v-if="hasInput && estimate > 120" class="text-warning ml-2"><AppIcon name="warning" :size="13" /> long transmission</span>
         </div>
         <button class="btn btn-primary" :disabled="!hasInput" @click="passOpen = true">
