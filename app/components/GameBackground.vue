@@ -1,53 +1,8 @@
 <script setup lang="ts">
 // A cute side-scrolling platform-game scene pinned to the bottom of the viewport:
-// layered leaf-grass panning so the candy truck looks like it drives left, its
-// wheels rolling and body bouncing on an irregular rhythm. The candies riding in
-// the bed jiggle as it drives; every so often one tumbles out onto the grass and a
-// fresh one fades in to take its place. Purely decorative; frozen under reduced-motion.
-
-interface CandyKind { color: string, wrap: string, type: number }
-interface BedCandy extends CandyKind { id: number, slot: number, l: number, t: number, jd: number, jdel: number }
-interface FallCandy extends CandyKind { id: number, l: number, t: number, fall: number, drift: number, rot: number, dur: number }
-
-const KINDS = [
-  { c: '#FF8FB1', w: '#E4638F' },
-  { c: '#FFD36E', w: '#E8AE3B' },
-  { c: '#8ED6A0', w: '#57B37E' },
-  { c: '#8FC7F0', w: '#5C9FD6' },
-  { c: '#C4A7F5', w: '#9B76E0' },
-  { c: '#FFA36B', w: '#E87D45' },
-]
-// Resting spots for candies inside the (mirrored) bed on the truck's right, heaped
-// into a mound: a single peak, widening to the base. Ordered back-to-front (peak
-// first) so the lower, nearer candies overlap the ones behind them.
-const SLOTS = [
-  { l: 122, t: 32 },
-  { l: 112, t: 42 },
-  { l: 132, t: 42 },
-  { l: 101, t: 51 },
-  { l: 117, t: 51 },
-  { l: 133, t: 51 },
-  { l: 149, t: 51 },
-]
-
-let uid = 0
-let timer: ReturnType<typeof setTimeout> | null = null
-
-function reducedMotion(): boolean {
-  return !!(import.meta.client && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
-}
-function kind(): CandyKind {
-  const k = KINDS[Math.floor(Math.random() * KINDS.length)]!
-  return { color: k.c, wrap: k.w, type: Math.floor(Math.random() * 2) }
-}
-function makeBedCandy(slot: number): BedCandy {
-  return { id: uid++, slot, l: SLOTS[slot]!.l, t: SLOTS[slot]!.t, jd: 0.55 + Math.random() * 0.5, jdel: -(Math.random() * 1.4), ...kind() }
-}
-
-const bedCandies = ref<BedCandy[]>(SLOTS.map((_, i) => makeBedCandy(i)))
-const fallCandies = ref<FallCandy[]>([])
-// Render in slot order so a replenished candy keeps the mound's back-to-front stacking.
-const sortedBed = computed(() => [...bedCandies.value].sort((a, b) => a.slot - b.slot))
+// hazy parallax mountains and layered leaf-grass that pan so the truck looks like it
+// drives left, its wheels rolling and body bouncing on an irregular rhythm. Purely
+// decorative; frozen under prefers-reduced-motion.
 
 // Procedural, seamless grass tile: a scalloped ground mound plus many curved leaf
 // blades in a few tones, and (front layer) a couple of tiny flowers.
@@ -163,38 +118,6 @@ function mountainTile(fill: string, cap: string, seed: number, peaks: number, ma
 // Wide tiles with just two broad peaks, so only one or two mountains span the width.
 const mtnFar = mountainTile('#CDC7E6', '#F4F1FB', 0x51, 2, 190, 1240)
 const mtnNear = mountainTile('#B7B3D8', '#ECE9F6', 0x2f, 2, 135, 1000)
-
-function dropOne(): void {
-  if (bedCandies.value.length > 1) {
-    const idx = Math.floor(Math.random() * bedCandies.value.length)
-    const c = bedCandies.value.splice(idx, 1)[0]!
-    const fid = uid++
-    // Tumble backward (rightward) out of the bed and down onto the grass. The drop
-    // is measured from the candy's own height in the pile so every one lands on the
-    // same grass line instead of stopping in mid-air.
-    fallCandies.value.push({ id: fid, l: c.l, t: c.t, fall: 90 - c.t + Math.random() * 6, drift: 12 + Math.random() * 30, rot: Math.random() * 720 - 360, dur: 1.7 + Math.random() * 0.6, color: c.color, wrap: c.wrap, type: c.type })
-    setTimeout(() => {
-      fallCandies.value = fallCandies.value.filter(x => x.id !== fid)
-    }, 2700)
-    // Replenish the freed slot with a fresh candy that fades in.
-    setTimeout(() => {
-      bedCandies.value.push(makeBedCandy(c.slot))
-    }, 550)
-  }
-  schedule()
-}
-function schedule(): void {
-  timer = setTimeout(dropOne, 2400 + Math.random() * 3600)
-}
-
-onMounted(() => {
-  if (!reducedMotion())
-    schedule()
-})
-onBeforeUnmount(() => {
-  if (timer)
-    clearTimeout(timer)
-})
 </script>
 
 <template>
@@ -229,42 +152,11 @@ onBeforeUnmount(() => {
               <path d="M164 111v26M151 124h26M155 115l18 18M173 115l-18 18" stroke="#c3aeb8" stroke-width="2.4" stroke-linecap="round" />
             </g>
           </svg>
-
-          <!-- candies riding in the bed, each jiggling on its own beat -->
-          <div v-for="c in sortedBed" :key="c.id" class="bed-candy" :style="{ left: `${c.l}px`, top: `${c.t}px` }">
-            <div class="bed-jig" :style="{ '--jd': `${c.jd}s`, '--jdel': `${c.jdel}s` }">
-              <svg width="17" height="15" viewBox="0 0 17 15">
-                <ellipse cx="8.5" cy="7.5" rx="5" ry="5" :fill="c.color" />
-                <path d="M3.5 7.5 0 4.3v6.4z" :fill="c.wrap" />
-                <path d="M13.5 7.5 17 4.3v6.4z" :fill="c.wrap" />
-                <circle v-if="c.type === 0" cx="6.6" cy="5.6" r="1.5" fill="#fff" opacity="0.65" />
-                <path v-else d="M4 7.5a4.5 4.5 0 0 1 9 0" stroke="#fff" stroke-width="1.2" fill="none" opacity="0.5" />
-              </svg>
-            </div>
-          </div>
         </div>
       </div>
     </div>
 
     <div class="layer front" :style="{ backgroundImage: grassFront }" />
-
-    <!-- candies that have tumbled out of the bed, landing on top of the grass -->
-    <div class="fall-layer">
-      <div
-        v-for="c in fallCandies"
-        :key="c.id"
-        class="fall-candy"
-        :style="{ 'left': `${c.l}px`, 'top': `${c.t}px`, '--fall': `${c.fall}px`, '--drift': `${c.drift}px`, '--rot': `${c.rot}deg`, 'animationDuration': `${c.dur}s` }"
-      >
-        <svg width="17" height="15" viewBox="0 0 17 15">
-          <ellipse cx="8.5" cy="7.5" rx="5" ry="5" :fill="c.color" />
-          <path d="M3.5 7.5 0 4.3v6.4z" :fill="c.wrap" />
-          <path d="M13.5 7.5 17 4.3v6.4z" :fill="c.wrap" />
-          <circle v-if="c.type === 0" cx="6.6" cy="5.6" r="1.5" fill="#fff" opacity="0.65" />
-          <path v-else d="M4 7.5a4.5 4.5 0 0 1 9 0" stroke="#fff" stroke-width="1.2" fill="none" opacity="0.5" />
-        </svg>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -329,15 +221,6 @@ onBeforeUnmount(() => {
   right: 7%;
   bottom: 60px;
 }
-/* Same box as the truck, but drawn in front of the grass so a dropped candy stays
-   visible as it lands on top of the blades instead of vanishing behind them. */
-.fall-layer {
-  position: absolute;
-  right: 7%;
-  bottom: 60px;
-  width: 188px;
-  height: 128px;
-}
 /* Two bounces on incommensurate periods → an irregular, never-quite-repeating ride. */
 .truck-bob {
   animation: bounce-a 0.83s ease-in-out infinite;
@@ -349,21 +232,6 @@ onBeforeUnmount(() => {
 }
 .wheel {
   animation: spin 3.8s linear infinite;
-}
-
-.bed-candy {
-  position: absolute;
-  animation: candy-pop 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) both;
-}
-.bed-jig {
-  animation: candy-jiggle var(--jd) ease-in-out var(--jdel) infinite;
-}
-.fall-candy {
-  position: absolute;
-  animation-name: candy-fall;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.7, 1);
-  animation-fill-mode: forwards;
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.12));
 }
 
 /* Grass pans rightward → the world moves right under the truck → it drives left. */
@@ -420,46 +288,6 @@ onBeforeUnmount(() => {
     transform: rotate(360deg);
   }
 }
-@keyframes candy-jiggle {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-4deg);
-  }
-  50% {
-    transform: translateY(-1.8px) rotate(4deg);
-  }
-}
-@keyframes candy-pop {
-  0% {
-    transform: scale(0.2);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-@keyframes candy-fall {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 1;
-  }
-  55% {
-    transform: translate(calc(var(--drift) * 0.7), var(--fall)) rotate(calc(var(--rot) * 0.7));
-    opacity: 1;
-  }
-  70% {
-    transform: translate(calc(var(--drift) * 0.85), calc(var(--fall) - 9px)) rotate(var(--rot));
-  }
-  85% {
-    transform: translate(var(--drift), var(--fall)) rotate(var(--rot));
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--drift), var(--fall)) rotate(var(--rot));
-    opacity: 0;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .mtn-far,
@@ -469,8 +297,7 @@ onBeforeUnmount(() => {
   .front,
   .truck-bob,
   .truck-jit,
-  .wheel,
-  .bed-jig {
+  .wheel {
     animation: none;
   }
 }
