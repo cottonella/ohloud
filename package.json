@@ -63,7 +63,10 @@
     "mac": {
       "target": [
         "zip"
-      ]
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "ohloud listens through the microphone to receive secrets sent as sound."
+      }
     },
     "linux": {
       "target": [

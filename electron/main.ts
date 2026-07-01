@@ -2,7 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
-import { app, BrowserWindow, ipcMain, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, session, shell } from 'electron'
 import { createContext } from './trpc/server/context'
 import { appRouter } from './trpc/server/router'
 
@@ -68,6 +68,18 @@ function registerTrpc() {
   })
 }
 
+// The Receive tab needs the microphone. Electron denies media permission by
+// default, so grant it here (deny everything else). The OS-level gate still
+// applies — macOS reads `NSMicrophoneUsageDescription` from Info.plist
+// (electron-builder `mac.extendInfo`) and shows its own consent prompt.
+function registerMediaPermissions() {
+  const isMedia = (permission: string): boolean => permission === 'media'
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(isMedia(permission))
+  })
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => isMedia(permission))
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -106,24 +118,22 @@ function createWindow() {
         const text: string = await win.webContents.executeJavaScript(
           `(async () => {
             const wait = ms => new Promise(r => setTimeout(r, ms))
-            let btn = null
-            // Wait for the Vue app to mount and render the button.
-            for (let i = 0; i < 100 && !(btn = document.querySelector('button.btn')); i++)
+            // Wait for the Vue app to mount and render the ohloud shell.
+            for (let i = 0; i < 120; i++) {
+              if (/ohloud/i.test(document.body.innerText) && document.querySelector('.pill-tab'))
+                break
               await wait(50)
-            if (!btn) return 'NO_BUTTON'
-            btn.click()
-            for (let i = 0; i < 60 && !document.body.innerText.includes('6 ×'); i++)
-              await wait(50)
+            }
             return document.body.innerText
           })()`,
         )
-        if (text.includes('42')) {
+        if (/ohloud/i.test(text) && /Receive/.test(text)) {
           // eslint-disable-next-line no-console
-          console.log('SMOKE_TEST: OK (load + tRPC 6 × 7 = 42)')
+          console.log('SMOKE_TEST: OK (ohloud shell rendered from app://)')
           app.exit(0)
         }
         else {
-          console.error('SMOKE_TEST: tRPC result missing. Body:', text)
+          console.error('SMOKE_TEST: app shell not found. Body:', text.slice(0, 200))
           app.exit(1)
         }
       }
@@ -141,6 +151,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   registerTrpc()
+  registerMediaPermissions()
   if (!isDev)
     registerAppProtocol()
   createWindow()
