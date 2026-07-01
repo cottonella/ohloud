@@ -223,11 +223,11 @@ const mtnNear = mountainTile('#B7B3D8', '#ECE9F6', 0x2f, 2, 135, 1000)
 }
 /* Two bounces on incommensurate periods → an irregular, never-quite-repeating ride. */
 .truck-bob {
-  animation: bounce-a 0.83s ease-in-out infinite;
+  animation: bounce-a 1.7s ease-in-out infinite;
   transform-origin: bottom center;
 }
 .truck-jit {
-  animation: bounce-b 1.27s ease-in-out infinite;
+  animation: bounce-b 2.5s ease-in-out infinite;
   transform-origin: bottom center;
 }
 .wheel {
