@@ -27,3 +27,12 @@ npm-debug.log*
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/tasks.json
+
+# Local-only project docs — kept in the working tree, out of git
+/CLAUDE.md
+/FIXES.md
+/TASKS.md
+/FORMAT.md
+/RESEARCH.md
+/SECURITY.md
+/ICON-THEME.md
