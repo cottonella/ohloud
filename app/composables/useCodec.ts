@@ -1,4 +1,10 @@
 // Promise-based wrapper around the codec Web Worker.
+//
+// The worker is inlined (`?worker&inline`) so it starts from an in-memory Blob
+// with no separate network request. This is essential for the offline PWA: iOS
+// Safari's service worker does not serve the `new Worker(url)` script fetch from
+// cache, so a URL-based worker hangs on airplane mode ("Wrapping it up safely…").
+import CodecWorker from '../workers/codec.worker.ts?worker&inline'
 
 interface Pending {
   resolve: (value: any) => void
@@ -15,7 +21,7 @@ const GUI_KDF = { memLog2: 15, time: 3, lanes: 1 }
 
 function getWorker(): Worker {
   if (!worker) {
-    worker = new Worker(new URL('../workers/codec.worker.ts', import.meta.url), { type: 'module' })
+    worker = new CodecWorker()
     worker.onmessage = (e: MessageEvent) => {
       const m = e.data
       const p = pending.get(m.id)
@@ -30,6 +36,16 @@ function getWorker(): Worker {
         err.code = m.error
         p.reject(err)
       }
+    }
+    // If the worker fails to start or throws at the top level, reject everything
+    // pending so the UI shows an error instead of hanging on "Wrapping it up…".
+    worker.onerror = (e: ErrorEvent) => {
+      const err = new Error(e.message || 'The codec worker failed to start') as Error & { code?: string }
+      err.code = 'worker'
+      for (const p of pending.values())
+        p.reject(err)
+      pending.clear()
+      worker = undefined // let the next call rebuild it
     }
   }
   return worker
