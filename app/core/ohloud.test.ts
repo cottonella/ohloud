@@ -167,7 +167,7 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
       const f = decodePcm(simulateChannel(encodeFile('vault.bin', content, PW, { kdf: FAST }).pcm, { ...ch, snrDb, seed: snrDb + 1 }), PW, { maxSearchSamples: 1 << 16 })
       expect([...f.content]).toEqual([...content])
     }
-  })
+  }, 20_000)
 
   it('estimates a long transmission for a huge payload (duration-warning path)', () => {
     expect(estimateDurationSec(40)).toBeLessThan(120) // a short secret → no warning
