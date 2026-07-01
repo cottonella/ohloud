@@ -20,6 +20,8 @@ const ICONS: Record<string, string> = {
   'listen': '<rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3"/><path d="M9 20.5h6"/>',
   'download': '<path d="M12 4.5v10"/><path d="M8 10.5l4 4 4-4"/><path d="M5 19.5h14"/>',
   'upload': '<path d="M4 14v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M12 16V5"/><path d="M8 9l4-4 4 4"/>',
+  'desktop': '<rect x="3" y="4.5" width="18" height="12" rx="1.6"/><path d="M12 16.5v3.5"/><path d="M8.5 20h7"/>',
+  'phone': '<rect x="7" y="3" width="10" height="18" rx="2.4"/><path d="M10.5 18h3"/>',
   'check': '<path d="M5 12.5l4.5 4.5L19 6.5"/>',
   'copy': '<rect x="9" y="9" width="11" height="11" rx="2.2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>',
   'play': '<path d="M8 5.5 19 12 8 18.5Z"/>',
