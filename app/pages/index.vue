@@ -66,7 +66,12 @@ const showTech = ref(false)
 
       <footer class="border-base-300/50 mt-3 flex flex-wrap items-center justify-center gap-2 border-t pt-3">
         <span class="pill pill-soft">Made with <AppIcon name="heart" :size="14" /></span>
-        <span class="pill pill-soft">free forever</span>
+        <a href="https://github.com/cottonella/ohloud" target="_blank" rel="noopener noreferrer" class="pill pill-ghost" aria-label="ohloud on GitHub">
+          <AppIcon name="github" :size="15" /> GitHub
+        </a>
+        <a href="https://github.com/cottonella/ohloud/releases" target="_blank" rel="noopener noreferrer" class="pill pill-download">
+          <AppIcon name="download" :size="15" /> Download
+        </a>
         <a href="https://ko-fi.com/cottonella" target="_blank" rel="noopener noreferrer" class="pill pill-kofi">
           <svg class="kofi-cup" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.4 6.7h11.2V14a4 4 0 0 1-4 4h-3.2a4 4 0 0 1-4-4Z" fill="#fff" /><path d="M15.6 8.9a2.8 2.8 0 0 1 0 5.4" fill="none" /><path d="M10 15.05c-1.75-1.18-2.68-2.05-2.68-3.12 0-.82.62-1.4 1.35-1.4.62 0 1.05.33 1.33.77.28-.44.71-.77 1.33-.77.73 0 1.35.58 1.35 1.4 0 1.07-.93 1.94-2.68 3.12Z" fill="#e8324a" stroke="#1a1a1a" stroke-width="1" /></svg>Buy me a coffee
         </a>
@@ -128,6 +133,30 @@ const showTech = ref(false)
   color: var(--color-base-content);
   opacity: 0.7;
 }
+/* GitHub — quiet: low-key until hovered. */
+.pill-ghost {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+.pill-ghost:hover {
+  opacity: 0.9;
+}
+/* Download — prominent, echoing the app's peachy primary (à la the coffee pill). */
+.pill-download {
+  background: #fce6d3;
+  color: #a75f22;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgb(212 150 90 / 0.28);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.pill-download:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(212 150 90 / 0.38);
+}
 .pill-kofi {
   background: #fcdfeb;
   color: #b1436a;
@@ -144,6 +173,8 @@ const showTech = ref(false)
 .kofi-cup {
   width: 1.45em;
   height: 1.45em;
+  /* The cup is top-heavy (wide rim high in its box), so it reads high — nudge down. */
+  transform: translateY(1px);
 }
 .tech-enter-active,
 .tech-leave-active {
