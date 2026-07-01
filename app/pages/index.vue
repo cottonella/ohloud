@@ -36,7 +36,7 @@ const tab = ref<'send' | 'receive'>('send')
     </div>
 
     <footer class="mt-6 text-center text-xs opacity-50">
-      <AppIcon name="lock" :size="13" /> encrypted with a preshared key · <AppIcon name="heart" :size="13" /> made with care
+      <AppIcon name="lock" :size="13" /> encrypted with a password · <AppIcon name="heart" :size="13" /> made with care
     </footer>
   </main>
 </template>

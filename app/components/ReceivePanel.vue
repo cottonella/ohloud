@@ -78,7 +78,7 @@ async function onKey(passphrase: string) {
   catch (e) {
     const code = (e as Error & { code?: string }).code
     errorMsg.value = code === 'wrong-passphrase'
-      ? 'That key didn\'t fit. Want to try again?'
+      ? 'That password didn\'t fit. Want to try again?'
       : 'The transmission came through incomplete or corrupted.'
     stage.value = 'error'
   }
@@ -176,7 +176,7 @@ onBeforeUnmount(() => listener?.stop())
       </p>
       <div class="flex gap-2">
         <button v-if="captured" class="btn btn-primary btn-sm" @click="retryKey">
-          Try key again
+          Try password again
         </button>
         <button class="btn btn-ghost btn-sm" @click="reset">
           Start over
@@ -184,7 +184,7 @@ onBeforeUnmount(() => listener?.stop())
       </div>
     </template>
 
-    <PassphraseModal :open="passOpen" title="Enter the preshared key" @submit="onKey" @close="passOpen = false" />
+    <PassphraseModal :open="passOpen" title="Enter the password" @submit="onKey" @close="passOpen = false" />
   </div>
 </template>
 

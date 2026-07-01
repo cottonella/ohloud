@@ -5,7 +5,7 @@ const props = withDefaults(defineProps<{
   /** Require a confirm field (sending) vs single field (receiving). */
   confirm?: boolean
 }>(), {
-  title: 'Preshared key',
+  title: 'Password',
   confirm: false,
 })
 
@@ -68,7 +68,7 @@ function submit() {
                 {{ title }}
               </h3>
               <p class="text-xs opacity-60">
-                Only someone with this key can open it.
+                Only someone with this password can open it.
               </p>
             </div>
           </div>
@@ -81,7 +81,7 @@ function submit() {
                 v-model="pass"
                 :type="show ? 'text' : 'password'"
                 class="grow"
-                placeholder="preshared key"
+                placeholder="password"
                 autocomplete="off"
               >
               <button type="button" class="btn btn-ghost btn-xs" @click="show = !show">
@@ -102,12 +102,12 @@ function submit() {
                 v-model="repeat"
                 :type="show ? 'text' : 'password'"
                 class="grow"
-                placeholder="confirm key"
+                placeholder="confirm password"
                 autocomplete="off"
               >
             </label>
             <p v-if="mismatch" class="text-error text-xs">
-              Keys don't match.
+              Passwords don't match.
             </p>
 
             <div class="flex justify-end gap-2 pt-1">

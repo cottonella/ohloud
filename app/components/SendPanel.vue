@@ -260,7 +260,7 @@ onBeforeUnmount(() => {
       </template>
     </div>
 
-    <PassphraseModal :open="passOpen" title="Choose a preshared key" confirm @submit="onKey" @close="passOpen = false" />
+    <PassphraseModal :open="passOpen" title="Choose a password" confirm @submit="onKey" @close="passOpen = false" />
   </div>
 </template>
 
