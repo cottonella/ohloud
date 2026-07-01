@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { simulateChannel } from '../../bench/channel'
 import { CorruptedError, WrongPassphraseError } from './errors'
-import { decodePcm, encodeFile, encodeText } from './ohloud'
+import { decodePcm, encodeFile, encodeText, estimateDurationSec } from './ohloud'
 
 const FAST = { memLog2: 12, time: 1, lanes: 1 } // 4 MiB — fast for tests
 const PW = 'correct horse battery staple'
@@ -155,5 +155,23 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
     for (let i = Math.floor(pcm.length / 2); i < pcm.length; i++)
       pcm[i] = 0
     expect(() => decodePcm(pcm, PW, { maxSearchSamples: 4096 })).toThrow(CorruptedError)
+  })
+
+  it('decodes + decrypts + verifies text and a file across several SNRs', () => {
+    const msg = 'multi-SNR secret 🧸 vault 4815162342'
+    const content = new Uint8Array(300).map((_, i) => (i * 17 + 3) & 0xFF)
+    const ch = { reverb: 0.2, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000, sampleRate: 48000 }
+    for (const snrDb of [28, 18, 10]) {
+      const t = decodePcm(simulateChannel(encodeText(msg, PW, { kdf: FAST }).pcm, { ...ch, snrDb, seed: snrDb }), PW, { maxSearchSamples: 1 << 16 })
+      expect(t.text).toBe(msg)
+      const f = decodePcm(simulateChannel(encodeFile('vault.bin', content, PW, { kdf: FAST }).pcm, { ...ch, snrDb, seed: snrDb + 1 }), PW, { maxSearchSamples: 1 << 16 })
+      expect([...f.content]).toEqual([...content])
+    }
+  })
+
+  it('estimates a long transmission for a huge payload (duration-warning path)', () => {
+    expect(estimateDurationSec(40)).toBeLessThan(120) // a short secret → no warning
+    expect(estimateDurationSec(200_000)).toBeGreaterThan(120) // a big file → warns
+    expect(estimateDurationSec(9000)).toBeGreaterThan(estimateDurationSec(900)) // monotonic
   })
 })
