@@ -57,70 +57,72 @@ function submit() {
 </script>
 
 <template>
-  <Transition name="pp">
-    <div v-if="open" class="pp-backdrop" @click.self="emit('close')">
-      <div class="pp-card anim-pop">
-        <div class="flex items-center gap-3">
-          <TeddyBear :size="56" mood="idle" />
-          <div>
-            <h3 class="text-lg font-bold">
-              {{ title }}
-            </h3>
-            <p class="text-xs opacity-60">
-              Only someone with this key can open it.
-            </p>
-          </div>
-        </div>
-
-        <form class="mt-4 space-y-3" @submit.prevent="submit">
-          <label class="input input-bordered flex w-full items-center gap-2">
-            <span class="w-5 text-center">🔑</span>
-            <input
-              ref="inputEl"
-              v-model="pass"
-              :type="show ? 'text' : 'password'"
-              class="grow"
-              placeholder="preshared key"
-              autocomplete="off"
-            >
-            <button type="button" class="btn btn-ghost btn-xs" @click="show = !show">
-              {{ show ? '🙈' : '👁️' }}
-            </button>
-          </label>
-
-          <div v-if="confirm && pass" class="strength">
-            <div class="strength-track">
-              <div class="strength-fill" :style="{ width: `${(strength.score + 1) * 20}%`, background: strength.color }" />
+  <Teleport to="body">
+    <Transition name="pp">
+      <div v-if="open" class="pp-backdrop" @click.self="emit('close')">
+        <div class="pp-card anim-pop">
+          <div class="flex items-center gap-3">
+            <TeddyBear :size="56" mood="idle" />
+            <div>
+              <h3 class="text-lg font-bold">
+                {{ title }}
+              </h3>
+              <p class="text-xs opacity-60">
+                Only someone with this key can open it.
+              </p>
             </div>
-            <span class="text-xs font-medium" :style="{ color: strength.color }">{{ strength.label }}</span>
           </div>
 
-          <label v-if="confirm" class="input input-bordered flex w-full items-center gap-2">
-            <span class="w-5 text-center">🔁</span>
-            <input
-              v-model="repeat"
-              :type="show ? 'text' : 'password'"
-              class="grow"
-              placeholder="confirm key"
-              autocomplete="off"
-            >
-          </label>
-          <p v-if="mismatch" class="text-error text-xs">
-            Keys don't match.
-          </p>
+          <form class="mt-4 space-y-3" @submit.prevent="submit">
+            <label class="input input-bordered flex w-full items-center gap-2">
+              <span class="w-5 text-center">🔑</span>
+              <input
+                ref="inputEl"
+                v-model="pass"
+                :type="show ? 'text' : 'password'"
+                class="grow"
+                placeholder="preshared key"
+                autocomplete="off"
+              >
+              <button type="button" class="btn btn-ghost btn-xs" @click="show = !show">
+                {{ show ? '🙈' : '👁️' }}
+              </button>
+            </label>
 
-          <div class="flex justify-end gap-2 pt-1">
-            <button type="button" class="btn btn-ghost" @click="emit('close')">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" :disabled="!valid">
-              Continue
-            </button>
-          </div>
-        </form>
+            <div v-if="confirm && pass" class="strength">
+              <div class="strength-track">
+                <div class="strength-fill" :style="{ width: `${(strength.score + 1) * 20}%`, background: strength.color }" />
+              </div>
+              <span class="text-xs font-medium" :style="{ color: strength.color }">{{ strength.label }}</span>
+            </div>
+
+            <label v-if="confirm" class="input input-bordered flex w-full items-center gap-2">
+              <span class="w-5 text-center">🔁</span>
+              <input
+                v-model="repeat"
+                :type="show ? 'text' : 'password'"
+                class="grow"
+                placeholder="confirm key"
+                autocomplete="off"
+              >
+            </label>
+            <p v-if="mismatch" class="text-error text-xs">
+              Keys don't match.
+            </p>
+
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" class="btn btn-ghost" @click="emit('close')">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="!valid">
+                Continue
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
