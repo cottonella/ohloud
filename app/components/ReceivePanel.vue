@@ -8,6 +8,7 @@ let filterSeq = 0
 
 const codec = useCodec()
 const { celebrate } = useConfetti()
+const sound = useXylophone()
 
 const stage = ref<Stage>('idle')
 const micLevel = ref(0)
@@ -86,6 +87,7 @@ const teddyMood = computed(() => {
 const levelPct = computed(() => Math.min(100, Math.round(micLevel.value * 320)))
 
 async function listen() {
+  sound.unlock() // warm the UI-sound context while we have the gesture
   errorMsg.value = ''
   result.value = null
   revealed.value = false
@@ -132,6 +134,7 @@ async function onKey(passphrase: string) {
     result.value = await codec.decode(captured.pcm.slice(), passphrase, captured.sampleRate)
     stage.value = 'done'
     void celebrate()
+    sound.success()
   }
   catch (e) {
     const code = (e as Error & { code?: string }).code

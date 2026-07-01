@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { AudioOutput } from '~/core'
-import { estimateDurationSec, openAudioOutput } from '~/core'
+import { estimateDurationSec, jingleDurationSec, openAudioOutput, synthXylophoneJingle } from '~/core'
 
 type Stage = 'idle' | 'ready' | 'encoding' | 'playing' | 'done' | 'error'
 
 const codec = useCodec()
+const sound = useXylophone()
 
 const mode = ref<'text' | 'file'>('text')
 const speed = ref<'robust' | 'fast'>('robust')
@@ -29,11 +30,12 @@ let timer: ReturnType<typeof setInterval> | null = null
 const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 : file.value !== null))
 
 const estimate = computed(() => {
+  const j = jingleDurationSec()
   if (mode.value === 'text') {
     const bytes = new TextEncoder().encode(text.value).length
-    return estimateDurationSec(bytes, 17, 48000, speed.value, 0.25)
+    return estimateDurationSec(bytes, 17, 48000, speed.value, 0.25) + j
   }
-  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value, 0.25) : 0
+  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value, 0.25) + j : 0
 })
 
 const estimateLabel = computed(() => {
@@ -97,6 +99,7 @@ function onKey(passphrase: string) {
 // Encode + play. Reused by the initial Start and by Resend. Runs from a user
 // gesture so the AudioContext is allowed to open (required on iOS).
 async function start() {
+  sound.unlock() // warm the UI-sound context while we still have the gesture
   stage.value = 'encoding'
   errorMsg.value = ''
   let output: AudioOutput | null = null
@@ -109,13 +112,20 @@ async function start() {
       ? await codec.encodeText(text.value, pendingPass.value, output.sampleRate, speed.value)
       : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), pendingPass.value, output.sampleRate, speed.value)
 
-    durationSec.value = reply.durationSec
+    // Lead with a cute glockenspiel jingle; the receiver's chirp search scans past it.
+    const jingle = synthXylophoneJingle(output.sampleRate)
+    const pcm = new Float32Array(jingle.length + reply.pcm.length)
+    pcm.set(jingle, 0)
+    pcm.set(reply.pcm, jingle.length)
+
+    durationSec.value = pcm.length / output.sampleRate
     stage.value = 'playing'
     startProgress()
-    playback = output.play(reply.pcm)
+    playback = output.play(pcm)
     await playback.finished
     progress.value = 1
     stage.value = 'done'
+    sound.success()
   }
   catch (e) {
     errorMsg.value = (e as Error).message

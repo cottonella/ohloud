@@ -25,6 +25,7 @@ export type { SealOptions } from './container/seal'
 export { sealFile, sealText } from './container/text'
 
 // DSP / modem
+export { jingleDurationSec, jingleSamples, synthXylophoneJingle } from './dsp/jingle'
 export { DEFAULT_MFSK, demodulateMfsk, modulateMfsk } from './dsp/mfsk'
 export type { MfskConfig } from './dsp/mfsk'
 export { bytesPerOfdmSymbol, demodulateOfdm, modulateOfdm, ofdmConfig } from './dsp/ofdm'
