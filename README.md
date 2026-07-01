@@ -129,3 +129,18 @@ electron/       # desktop shell (app:// protocol, mic permission)
 bench/          # pure-JS acoustic channel model + calibration bench
 FORMAT.md · RESEARCH.md · SECURITY.md · ICON-THEME.md · TASKS.md
 ```
+
+## License
+
+ohloud is **dual-licensed** — pick whichever fits your use:
+
+- **Open source: [GNU AGPL-3.0-only](LICENSE).** Free to use, study, modify, and
+  self-host. The AGPL's one catch: if you distribute ohloud or run a modified
+  version for others (including as a network service), you must release your
+  **complete corresponding source** under the AGPL too.
+- **Commercial license.** To use ohloud in a closed-source product or service — or
+  otherwise without the AGPL's copyleft obligations — a separate paid license is
+  available. Reach out via [github.com/cottonella](https://github.com/cottonella).
+
+Copyright © 2026 cottonella. Contributions are accepted under the terms in
+[CONTRIBUTING.md](CONTRIBUTING.md), which keep this dual license possible.
