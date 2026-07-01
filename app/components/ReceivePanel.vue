@@ -112,7 +112,7 @@ onBeforeUnmount(() => listener?.stop())
 <template>
   <div class="flex flex-col items-center gap-4 py-2 text-center">
     <div v-if="insecure" class="alert alert-warning text-sm">
-      🔒 The microphone needs a secure page (https or localhost).
+      <AppIcon name="lock" :size="15" /> The microphone needs a secure page (https or localhost).
     </div>
 
     <TeddyBear :mood="teddyMood" :size="150" />
@@ -123,14 +123,15 @@ onBeforeUnmount(() => listener?.stop())
         Press listen, then play the sound on the other device.
       </p>
       <button class="btn btn-primary btn-lg" :disabled="insecure" @click="listen">
-        🎤 Listen
+        <AppIcon name="listen" /> Listen
       </button>
     </template>
 
     <!-- listening / receiving -->
     <template v-else-if="stage === 'listening' || stage === 'receiving'">
-      <p class="font-medium">
-        {{ stage === 'receiving' ? 'Receiving… hold still 🎶' : 'Listening for a sound…' }}
+      <p class="flex items-center justify-center gap-1.5 font-medium">
+        {{ stage === 'receiving' ? 'Receiving… hold still' : 'Listening for a sound…' }}
+        <AppIcon v-if="stage === 'receiving'" name="wave" :size="16" />
       </p>
       <div class="level-meter">
         <div class="level-fill" :style="{ width: `${levelPct}%` }" />
@@ -151,16 +152,16 @@ onBeforeUnmount(() => listener?.stop())
 
     <!-- done -->
     <template v-else-if="stage === 'done' && result">
-      <p class="text-success text-lg font-bold">
-        Delivered! 🎉
+      <p class="text-success flex items-center justify-center gap-1.5 text-lg font-bold">
+        Delivered! <AppIcon name="sparkle" :size="18" />
       </p>
       <div v-if="result.isText" class="result-text">
         {{ result.text }}
       </div>
       <div v-else class="space-y-2">
-        <p>📄 <span class="font-medium">{{ result.filename }}</span> <span class="opacity-60">({{ Math.ceil(result.content.length / 1024) }} KB)</span></p>
+        <p><AppIcon name="file" :size="15" /> <span class="font-medium">{{ result.filename }}</span> <span class="opacity-60">({{ Math.ceil(result.content.length / 1024) }} KB)</span></p>
         <button class="btn btn-primary btn-sm" @click="downloadFile">
-          ⬇ Save file
+          <AppIcon name="download" /> Save file
         </button>
       </div>
       <button class="btn btn-ghost btn-sm" @click="reset">

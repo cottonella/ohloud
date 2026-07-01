@@ -1,12 +1,14 @@
 <script setup lang="ts">
-interface TabOption { value: string, label: string }
+interface TabOption { value: string, label: string, icon?: string }
 
 const props = withDefaults(defineProps<{
   modelValue: string
   options: TabOption[]
   /** Stretch to fill the container (vs. shrink to content). */
   block?: boolean
-}>(), { block: false })
+  /** Icon size in px (default 18). */
+  iconSize?: number
+}>(), { block: false, iconSize: 18 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
@@ -33,6 +35,7 @@ const activeIndex = computed(() =>
       :class="{ 'is-active': o.value === modelValue }"
       @click="emit('update:modelValue', o.value)"
     >
+      <AppIcon v-if="o.icon" :name="o.icon" :size="iconSize" />
       {{ o.label }}
     </button>
   </div>
@@ -66,6 +69,10 @@ const activeIndex = computed(() =>
 .pill-tab {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   padding: 0.55rem 1rem;
   border: none;
   background: transparent;

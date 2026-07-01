@@ -139,8 +139,8 @@ onBeforeUnmount(() => {
       <PillTabs
         v-model="mode"
         :options="[
-          { value: 'text', label: '📝 Text' },
-          { value: 'file', label: '📎 File' },
+          { value: 'text', label: 'Text', icon: 'text' },
+          { value: 'file', label: 'File', icon: 'file' },
         ]"
       />
 
@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
         @drop.prevent="onDrop"
       >
         <input type="file" class="hidden" @change="onPick">
-        <span class="text-4xl">🧺</span>
+        <AppIcon name="upload" :size="40" class="opacity-70" />
         <span v-if="file" class="font-medium">{{ file.name }} <span class="opacity-60">({{ Math.ceil(file.size / 1024) }} KB)</span></span>
         <span v-else class="opacity-70">Drop a file here, or click to browse</span>
       </label>
@@ -170,24 +170,25 @@ onBeforeUnmount(() => {
           <span class="text-sm font-medium opacity-70">Speed</span>
           <PillTabs
             v-model="speed"
+            :icon-size="30"
             :options="[
-              { value: 'robust', label: '🐢 Robust' },
-              { value: 'fast', label: '🐇 Fast' },
+              { value: 'robust', label: 'Robust', icon: 'turtle' },
+              { value: 'fast', label: 'Fast', icon: 'rabbit' },
             ]"
           />
         </div>
         <p v-if="speed === 'fast'" class="text-xs opacity-60">
-          🐇 Much faster — likes a quiet room with the devices close. 🐢 Robust is the sturdiest in noise.
+          <AppIcon name="rabbit" :size="13" /> Much faster — likes a quiet room with the devices close. <AppIcon name="turtle" :size="13" /> Robust is the sturdiest in noise.
         </p>
       </div>
 
       <div class="flex items-center justify-between">
         <div class="text-sm opacity-70">
           <span v-if="hasInput">Sound length: <span class="badge badge-accent badge-sm">{{ estimateLabel }}</span></span>
-          <span v-if="hasInput && estimate > 120" class="text-warning ml-2">⚠ long transmission</span>
+          <span v-if="hasInput && estimate > 120" class="text-warning ml-2"><AppIcon name="warning" :size="13" /> long transmission</span>
         </div>
         <button class="btn btn-primary" :disabled="!hasInput" @click="passOpen = true">
-          🔊 Share
+          <AppIcon name="share" /> Share
         </button>
       </div>
       <p v-if="stage === 'error'" class="alert alert-error text-sm">
@@ -205,8 +206,8 @@ onBeforeUnmount(() => {
         <span class="loading loading-dots loading-md text-primary" />
       </template>
       <template v-else-if="stage === 'playing'">
-        <p class="font-medium">
-          Singing your secret 🎶
+        <p class="flex items-center justify-center gap-1.5 font-medium">
+          Singing your secret <AppIcon name="wave" :size="16" />
         </p>
         <progress class="progress progress-primary w-64" :value="progress" max="1" />
         <p class="text-xs opacity-60">
@@ -217,8 +218,8 @@ onBeforeUnmount(() => {
         </button>
       </template>
       <template v-else-if="stage === 'done'">
-        <p class="text-success text-lg font-bold">
-          Sent! 🎉
+        <p class="text-success flex items-center justify-center gap-1.5 text-lg font-bold">
+          Sent! <AppIcon name="sparkle" :size="18" />
         </p>
         <button class="btn btn-primary btn-sm" @click="reset">
           Send another

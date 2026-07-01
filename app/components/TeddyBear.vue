@@ -29,7 +29,7 @@ const sad = computed(() => props.mood === 'sad')
         :key="i"
         class="note"
         :style="{ 'left': `${48 + i * 7}%`, 'animationDelay': `${i * 0.32}s`, '--dx': `${(i % 2 ? 1 : -1) * 16}px` }"
-      >♪</span>
+      ><AppIcon name="note" :size="20" /></span>
     </template>
 
     <div class="teddy" :class="animClass">

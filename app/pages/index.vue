@@ -23,8 +23,8 @@ const tab = ref<'send' | 'receive'>('send')
           block
           class="mb-2"
           :options="[
-            { value: 'send', label: '📤 Send' },
-            { value: 'receive', label: '📥 Receive' },
+            { value: 'send', label: 'Send', icon: 'send' },
+            { value: 'receive', label: 'Receive', icon: 'receive' },
           ]"
         />
 
@@ -36,7 +36,7 @@ const tab = ref<'send' | 'receive'>('send')
     </div>
 
     <footer class="mt-6 text-center text-xs opacity-50">
-      🔒 encrypted with a preshared key · 🧸 made with care
+      <AppIcon name="lock" :size="13" /> encrypted with a preshared key · <AppIcon name="heart" :size="13" /> made with care
     </footer>
   </main>
 </template>

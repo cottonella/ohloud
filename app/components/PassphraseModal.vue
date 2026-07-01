@@ -75,7 +75,7 @@ function submit() {
 
           <form class="mt-4 space-y-3" @submit.prevent="submit">
             <label class="input input-bordered flex w-full items-center gap-2">
-              <span class="w-5 text-center">🔑</span>
+              <span class="text-base-content/50 w-5 text-center"><AppIcon name="key" :size="17" /></span>
               <input
                 ref="inputEl"
                 v-model="pass"
@@ -85,7 +85,7 @@ function submit() {
                 autocomplete="off"
               >
               <button type="button" class="btn btn-ghost btn-xs" @click="show = !show">
-                {{ show ? '🙈' : '👁️' }}
+                <AppIcon :name="show ? 'eye-off' : 'eye'" :size="17" />
               </button>
             </label>
 
@@ -97,7 +97,7 @@ function submit() {
             </div>
 
             <label v-if="confirm" class="input input-bordered flex w-full items-center gap-2">
-              <span class="w-5 text-center">🔁</span>
+              <span class="text-base-content/50 w-5 text-center"><AppIcon name="repeat" :size="17" /></span>
               <input
                 v-model="repeat"
                 :type="show ? 'text' : 'password'"
