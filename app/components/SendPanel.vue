@@ -19,6 +19,9 @@ const durationSec = ref(0)
 const outputRate = ref(0)
 const progress = ref(0)
 const pendingPass = ref('')
+const speedSelect = ref<HTMLElement | null>(null)
+const pillStyle = ref<Record<string, string>>({})
+const pillReady = ref(false)
 
 let playback: { stop: () => void, finished: Promise<void> } | null = null
 let timer: ReturnType<typeof setInterval> | null = null
@@ -137,6 +140,59 @@ function reset() {
   pendingPass.value = ''
 }
 
+let collapsedW = 0
+let collapsedLabelW = 0
+let gapPx = 0
+let padLeftPx = 0
+
+// Cache the geometry that never changes: a collapsed tab's baseline width, the gap,
+// and the container's left padding. Computed from parts (icon via getBoundingClientRect
+// since SVG offsetWidth is unreliable) — and crucially including the label's own
+// horizontal padding, which keeps rendering even when the label text is clipped away.
+function measureBase() {
+  const root = speedSelect.value
+  if (!root)
+    return
+  const tab = root.querySelector<HTMLElement>('.speed-tab')
+  const labelIn = root.querySelector<HTMLElement>('.speed-tab-label-in')
+  const icon = root.querySelector('.app-icon')
+  if (!tab || !labelIn)
+    return
+  const tc = getComputedStyle(tab)
+  const lc = getComputedStyle(labelIn)
+  const tabPadX = (Number.parseFloat(tc.paddingLeft) || 0) + (Number.parseFloat(tc.paddingRight) || 0)
+  collapsedLabelW = (Number.parseFloat(lc.paddingLeft) || 0) + (Number.parseFloat(lc.paddingRight) || 0)
+  const iconW = icon ? icon.getBoundingClientRect().width : 30
+  collapsedW = iconW + tabPadX + collapsedLabelW
+  const cs = getComputedStyle(root)
+  gapPx = Number.parseFloat(cs.columnGap || cs.gap || '0') || 0
+  padLeftPx = Number.parseFloat(cs.paddingLeft) || 0
+}
+
+// Slide + resize the highlight pill to sit exactly under the active tab, whose name
+// expands (so it's wider than the collapsed one).
+function updatePill() {
+  const root = speedSelect.value
+  if (!root)
+    return
+  if (!collapsedW)
+    measureBase()
+  const tabs = Array.from(root.querySelectorAll<HTMLElement>('.speed-tab'))
+  const activeIdx = tabs.findIndex(t => t.classList.contains('is-active'))
+  if (activeIdx < 0 || !collapsedW)
+    return
+  const labelIn = tabs[activeIdx]!.querySelector<HTMLElement>('.speed-tab-label-in')
+  const width = collapsedW - collapsedLabelW + (labelIn?.scrollWidth ?? 0)
+  const left = padLeftPx + activeIdx * (collapsedW + gapPx)
+  pillStyle.value = { transform: `translateX(${left}px)`, width: `${width}px` }
+}
+
+watch([speed, stage], () => nextTick(updatePill))
+onMounted(() => nextTick(() => {
+  updatePill()
+  requestAnimationFrame(() => (pillReady.value = true))
+}))
+
 onBeforeUnmount(() => {
   playback?.stop()
   clearTimer()
@@ -179,14 +235,31 @@ onBeforeUnmount(() => {
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-3">
           <span class="text-sm font-medium opacity-70">Speed</span>
-          <PillTabs
-            v-model="speed"
-            :icon-size="30"
-            :options="[
-              { value: 'robust', label: 'Robust', icon: 'turtle' },
-              { value: 'fast', label: 'Fast', icon: 'rabbit' },
-            ]"
-          />
+          <div ref="speedSelect" class="speed-select" role="tablist">
+            <span class="speed-pill" :class="{ 'is-ready': pillReady }" :style="pillStyle" aria-hidden="true" />
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="speed === 'robust'"
+              class="speed-tab"
+              :class="{ 'is-active': speed === 'robust' }"
+              @click="speed = 'robust'"
+            >
+              <span class="speed-tab-label"><span class="speed-tab-label-in">Robust</span></span>
+              <AppIcon name="turtle" :size="30" />
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="speed === 'fast'"
+              class="speed-tab"
+              :class="{ 'is-active': speed === 'fast' }"
+              @click="speed = 'fast'"
+            >
+              <span class="speed-tab-label"><span class="speed-tab-label-in">Fast</span></span>
+              <AppIcon name="rabbit" :size="30" />
+            </button>
+          </div>
         </div>
         <p v-if="speed === 'fast'" class="text-xs opacity-60">
           <AppIcon name="rabbit" :size="13" /> Much faster — likes a quiet room with the devices close. <AppIcon name="turtle" :size="13" /> Robust is the sturdiest in noise.
@@ -283,5 +356,85 @@ onBeforeUnmount(() => {
   border-color: var(--color-primary);
   background: oklch(97% 0.04 60);
   transform: translateY(-2px);
+}
+
+/* Speed tabs: a single pill slides + resizes under the active tab, whose name
+   expands to the left of its icon (turtle = Robust, rabbit = Fast). */
+.speed-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem;
+  background: var(--color-base-200);
+  border-radius: var(--radius-field);
+}
+.speed-pill {
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: 0;
+  z-index: 0;
+  border-radius: calc(var(--radius-field) - 0.3rem);
+  background: var(--color-base-100);
+  box-shadow: 0 2px 8px oklch(50% 0.05 60 / 0.18);
+}
+.speed-pill.is-ready {
+  transition:
+    transform 0.45s cubic-bezier(0.33, 0, 0.16, 1),
+    width 0.45s cubic-bezier(0.33, 0, 0.16, 1);
+}
+.speed-tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border: none;
+  background: transparent;
+  border-radius: calc(var(--radius-field) - 0.3rem);
+  color: var(--color-base-content);
+  opacity: 0.5;
+  cursor: pointer;
+  transition:
+    color 0.3s ease,
+    opacity 0.3s ease;
+}
+.speed-tab.is-active {
+  color: var(--color-primary);
+  opacity: 1;
+}
+.speed-tab:hover:not(.is-active) {
+  opacity: 0.8;
+}
+/* Animate the real text width via a 0fr→1fr grid column — eases smoothly to the
+   content width instead of snapping toward a fixed max-width. */
+.speed-tab-label {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-columns 0.45s cubic-bezier(0.33, 0, 0.16, 1),
+    opacity 0.35s ease;
+}
+.speed-tab.is-active .speed-tab-label {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.speed-tab-label-in {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding-left: 0.2rem;
+  padding-right: 0.45rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .speed-pill,
+  .speed-tab,
+  .speed-tab-label {
+    transition: none;
+  }
 }
 </style>
