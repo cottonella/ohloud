@@ -22,12 +22,6 @@ function classify(err: unknown): string {
 ctx.onmessage = (e: MessageEvent) => {
   const m = e.data
   try {
-    if (m.type === 'ping') {
-      // Liveness probe — lets the main thread learn whether this worker actually
-      // runs here (it may not, in an offline iOS PWA) before committing to it.
-      ctx.postMessage({ id: m.id, ok: true })
-      return
-    }
     if (m.type === 'encodeText' || m.type === 'encodeFile') {
       const r = m.type === 'encodeText'
         ? encodeText(m.text, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf, mode: m.mode })
