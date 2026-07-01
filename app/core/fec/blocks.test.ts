@@ -66,4 +66,31 @@ describe('fEC block codec', () => {
     expect(err).toBeInstanceOf(FecDecodeError)
     expect((err as FecDecodeError).failedBlocks.length).toBeGreaterThan(0)
   })
+
+  it('heals whole wiped blocks with the RaptorQ fountain', () => {
+    const blob = seq(2000, 9)
+    const { data, meta } = fecEncode(blob, { repair: 0.25 })
+    expect(meta.fountain).toBe(true)
+    const source = Math.ceil(2000 / (255 - 64 - 2)) // 11 source blocks
+    const spare = meta.blockCount - source // repair blocks
+    expect(spare).toBeGreaterThanOrEqual(2)
+
+    const wipe = (n: number): Uint8Array => {
+      const cw = deinterleave(data, meta.blockCount)
+      for (let i = 0; i < n; i++)
+        cw[i]!.fill(0xAB) // corrupt beyond RS correction → an erased block
+      return interleave(cw)
+    }
+
+    expect([...fecDecode(wipe(spare), meta)]).toEqual([...blob]) // up to capacity heals
+    expect(() => fecDecode(wipe(spare + 1), meta)).toThrow(FecDecodeError) // one past fails
+  })
+
+  it('rS-only (no fountain) dies on the first wiped block', () => {
+    const { data, meta } = fecEncode(seq(2000, 9)) // repair 0
+    expect(meta.fountain).toBe(false)
+    const cw = deinterleave(data, meta.blockCount)
+    cw[0]!.fill(0xAB)
+    expect(() => fecDecode(interleave(cw), meta)).toThrow(FecDecodeError)
+  })
 })

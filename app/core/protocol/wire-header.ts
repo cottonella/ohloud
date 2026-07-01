@@ -16,6 +16,7 @@ export const MODE_OFDM_QPSK = 0x01
 export const MODE_OFDM_QAM16 = 0x02
 export const MODE_OFDM_QAM64 = 0x03
 export const FEC_RS = 0x00
+export const FEC_RS_FOUNTAIN = 0x01 // inner RS per block + a RaptorQ fountain across blocks
 
 /** True if `mode` selects the Fast OFDM payload modem. */
 export function modeIsOfdm(mode: number): boolean {

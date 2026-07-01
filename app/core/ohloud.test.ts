@@ -55,6 +55,15 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
     expect([...out.content]).toEqual([...content])
   })
 
+  it('round-trips a file with RaptorQ repair through reverb (fountain on for files)', () => {
+    const content = new Uint8Array(1800).map((_, i) => (i * 41 + 7) & 0xFF)
+    const { pcm } = encodeFile('vault.bin', content, PW, { kdf: FAST }) // repair 0.25 by default
+    const heard = simulateChannel(pcm, { snrDb: 16, reverb: 0.3, reverbDecaySec: 0.45, bandLow: 300, bandHigh: 12000, sampleRate: 48000, seed: 11 })
+    const out = decodePcm(heard, PW, { maxSearchSamples: 1 << 16 })
+    expect(out.isText).toBe(false)
+    expect([...out.content]).toEqual([...content])
+  })
+
   it('round-trips a secret in Fast OFDM mode', () => {
     const msg = 'fast secret over OFDM 🐇 — far quicker than Morse'
     const { pcm, durationSec } = encodeText(msg, PW, { kdf: FAST, mode: 'fast' })

@@ -15,7 +15,7 @@ import { sealFile, sealText } from './container/text'
 import { CorruptedError, UnsupportedError } from './errors'
 import { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
 import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, ofdmGuardSamples, parseFrame, payloadSamples } from './protocol/frame'
-import { encodeWireHeader, FEC_RS, MODE_MFSK, MODE_OFDM_QPSK, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
+import { encodeWireHeader, FEC_RS, FEC_RS_FOUNTAIN, MODE_MFSK, MODE_OFDM_QPSK, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
 
 /** Robust MFSK (slow, very sturdy) or Fast OFDM (QPSK — higher rate, wants a cleaner channel). */
 export type TransmitMode = 'robust' | 'fast'
@@ -37,6 +37,8 @@ export interface EncodeOptions {
   sampleRate?: number
   /** Transmission speed/robustness tier (default `'robust'`). */
   mode?: TransmitMode
+  /** Fraction of RaptorQ repair blocks so lost blocks heal (default 0 for text, 0.25 for files). */
+  repair?: number
 }
 
 export interface EncodeResult {
@@ -59,20 +61,21 @@ const FEC_PAYLOAD_PER_BLOCK = 255 - 64 - 2 // default nsym=64 + 2-byte block CRC
  * without encrypting (drives the UI's "how long" indicator). Ignores
  * compression, so it's an upper bound for text.
  */
-export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sampleRate = DEFAULT_SAMPLE_RATE, mode: TransmitMode = 'robust'): number {
+export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sampleRate = DEFAULT_SAMPLE_RATE, mode: TransmitMode = 'robust', repair = 0): number {
   const recordLen = 1 + 2 + filenameBytes + 8 + 32 + payloadBytes
   const blobLen = HEADER_LEN + recordLen + TAG_LEN
-  const blockCount = Math.max(1, Math.ceil(blobLen / FEC_PAYLOAD_PER_BLOCK))
+  const sourceBlocks = Math.max(1, Math.ceil(blobLen / FEC_PAYLOAD_PER_BLOCK))
+  const blockCount = sourceBlocks + (repair ? Math.ceil(repair * sourceBlocks) : 0)
   const mb = modeByte(mode)
   return (chirpSamples(sampleRate) + headerSamples(sampleRate) + ofdmGuardSamples(sampleRate, mb) + payloadSamples(sampleRate, blockCount, mb)) / sampleRate
 }
 
-function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode: TransmitMode): EncodeResult {
-  const { data: fecData, meta } = fecEncode(blob, { nsym: fecNsym })
+function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode: TransmitMode, repair: number): EncodeResult {
+  const { data: fecData, meta } = fecEncode(blob, { nsym: fecNsym, repair })
   const headerCoded = encodeWireHeader({
     protoVer: WIRE_VERSION,
     mode: modeByte(mode),
-    fec: FEC_RS,
+    fec: meta.fountain ? FEC_RS_FOUNTAIN : FEC_RS,
     flags: 0,
     blobLen: blob.length,
     blockCount: meta.blockCount,
@@ -86,13 +89,13 @@ function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode:
 /** Encode a UTF-8 text message into a transmittable PCM frame. */
 export function encodeText(text: string, passphrase: string, opts: EncodeOptions = {}): EncodeResult {
   const blob = sealText(text, passphrase, { kdf: opts.kdf, compress: opts.compress })
-  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust')
+  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust', opts.repair ?? 0)
 }
 
 /** Encode arbitrary file bytes into a transmittable PCM frame. */
 export function encodeFile(filename: string, content: Uint8Array, passphrase: string, opts: EncodeOptions = {}): EncodeResult {
   const blob = sealFile(filename, content, passphrase, { kdf: opts.kdf, compress: opts.compress })
-  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust')
+  return encodeBlob(blob, opts.fecNsym ?? 64, opts.sampleRate ?? DEFAULT_SAMPLE_RATE, opts.mode ?? 'robust', opts.repair ?? 0.25)
 }
 
 export interface DecodeOptions {
@@ -114,7 +117,7 @@ export function decodePcm(pcm: Float32Array, passphrase: string, opts: DecodeOpt
 
   let blob: Uint8Array
   try {
-    blob = fecDecode(fecData, { origLen: header.blobLen, blockCount: header.blockCount, nsym: header.fecNsym })
+    blob = fecDecode(fecData, { origLen: header.blobLen, blockCount: header.blockCount, nsym: header.fecNsym, fountain: header.fec === FEC_RS_FOUNTAIN })
   }
   catch (e) {
     if (e instanceof FecDecodeError)
