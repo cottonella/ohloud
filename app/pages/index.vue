@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const tab = ref<'send' | 'receive'>('send')
+const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no internet', 'no account', 'no pairing', 'no setup', 'works offline', 'no cloud', 'no trace', 'no hassle', 'no download']
 </script>
 
 <template>
@@ -11,7 +12,7 @@ const tab = ref<'send' | 'receive'>('send')
           ohloud
         </h1>
         <p class="text-sm opacity-60">
-          send secrets by sound — no server, no setup
+          send secrets by sound — <Typewriter :words="TAGLINES" />
         </p>
       </div>
     </header>
