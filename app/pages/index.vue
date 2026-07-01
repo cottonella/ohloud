@@ -4,7 +4,7 @@ const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no interne
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col items-center px-4 py-8">
+  <main class="relative z-10 flex min-h-screen flex-col items-center px-4 py-8">
     <header class="mb-6 flex items-center gap-3">
       <TeddyBear :size="64" mood="idle" />
       <div>
@@ -36,24 +36,27 @@ const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no interne
       </div>
     </div>
 
-    <details class="help mt-5 w-full max-w-lg text-sm">
-      <summary class="help-summary cursor-pointer text-center opacity-60 transition hover:opacity-90">
-        How it works
-      </summary>
-      <div class="bg-base-100/70 mt-3 rounded-2xl p-4 text-left opacity-80 shadow-sm">
-        <p>ohloud turns your secret into sound and plays it speaker-to-microphone — no internet, no server, no pairing.</p>
-        <ul class="mt-2 list-disc space-y-1 pl-5">
-          <li>Keep both devices close, the speaker facing the microphone.</li>
-          <li>A quiet room helps — Fast needs it, Robust is forgiving.</li>
-          <li>Both sides use the <b>same password</b>.</li>
-          <li>Missed it? Press Listen again on the receiver, then Resend.</li>
-        </ul>
-      </div>
-    </details>
+    <!-- Kept on an opaque card so the text stays readable over the animated scene. -->
+    <div class="bg-base-100/90 mt-5 w-full max-w-lg rounded-3xl p-4 shadow-lg backdrop-blur-md">
+      <details class="help text-sm">
+        <summary class="help-summary cursor-pointer text-center font-medium opacity-70 transition hover:opacity-100">
+          How it works
+        </summary>
+        <div class="mt-3 text-left opacity-80">
+          <p>ohloud turns your secret into sound and plays it speaker-to-microphone — no internet, no server, no pairing.</p>
+          <ul class="mt-2 list-disc space-y-1 pl-5">
+            <li>Keep both devices close, the speaker facing the microphone.</li>
+            <li>A quiet room helps — Fast needs it, Robust is forgiving.</li>
+            <li>Both sides use the <b>same password</b>.</li>
+            <li>Missed it? Press Listen again on the receiver, then Resend.</li>
+          </ul>
+        </div>
+      </details>
 
-    <footer class="mt-6 text-center text-xs opacity-50">
-      <AppIcon name="lock" :size="13" /> encrypted with a password · <AppIcon name="heart" :size="13" /> made with care
-    </footer>
+      <footer class="border-base-300/50 mt-3 border-t pt-3 text-center text-xs opacity-60">
+        <AppIcon name="lock" :size="13" /> encrypted with a password · <AppIcon name="heart" :size="13" /> made with care
+      </footer>
+    </div>
   </main>
 </template>
 
