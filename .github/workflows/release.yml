@@ -1,0 +1,140 @@
+name: Release
+
+# Runs only when a version tag (v*) is pushed. A guard job additionally refuses to
+# deploy unless the tagged commit is on main.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # create the GitHub Release
+  pages: write # deploy to GitHub Pages
+  id-token: write # OIDC token the Pages deploy needs
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Gate: only tags that live on main may proceed ─────────────────────────────
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure the tag is on main
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "OK: $GITHUB_REF_NAME is on main."
+          else
+            echo "::error::Tag $GITHUB_REF_NAME is not on main — refusing to release."
+            exit 1
+          fi
+
+  # ── The web app → GitHub Pages (base '/', for the custom domain) ──────────────
+  pages:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install (skip Electron binary — web build only)
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+      - name: Generate the static site
+        run: npm run generate
+      - name: SPA fallback, disable Jekyll, attach custom domain
+        run: |
+          cp .output/public/index.html .output/public/404.html
+          touch .output/public/.nojekyll
+          if [ -n "${{ vars.SITE_DOMAIN }}" ]; then
+            echo "${{ vars.SITE_DOMAIN }}" > .output/public/CNAME
+            echo "CNAME set to ${{ vars.SITE_DOMAIN }}"
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .output/public
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  # ── Desktop apps: one artifact per OS, renamed to ohloud-<version>-<platform> ──
+  desktop:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            glob: dist-electron/*.zip
+            ext: zip
+          - os: macos-latest
+            platform: mac
+            glob: dist-electron/*.zip
+            ext: zip
+          - os: ubuntu-latest
+            platform: linux
+            glob: dist-electron/*.AppImage
+            ext: AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build web + Electron main
+        run: npm run build
+      - name: Package the desktop app
+        run: npx electron-builder --publish never
+        env:
+          # Ship an unsigned build — don't try to auto-discover signing certs.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Stage the renamed artifact in /tmp (survives across steps)
+        shell: bash
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          mkdir -p /tmp/artifacts
+          file=$(ls ${{ matrix.glob }} | head -n1)
+          dest="/tmp/artifacts/ohloud-${ver}-${{ matrix.platform }}.${{ matrix.ext }}"
+          cp "$file" "$dest"
+          echo "Staged $file -> $dest"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ohloud-${{ matrix.platform }}
+          path: /tmp/artifacts/*
+          if-no-files-found: error
+
+  # ── Collect all three artifacts and publish one GitHub Release ────────────────
+  release:
+    needs: [verify, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/dl
+          merge-multiple: true
+      - name: List what we got
+        run: ls -R /tmp/dl
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            /tmp/dl/ohloud-*-windows.zip
+            /tmp/dl/ohloud-*-mac.zip
+            /tmp/dl/ohloud-*-linux.AppImage
