@@ -3,6 +3,9 @@
 
 export function useConfetti() {
   async function celebrate() {
+    // Respect reduced-motion — skip the animation entirely.
+    if (import.meta.client && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+      return
     const confetti = (await import('canvas-confetti')).default
     const base = {
       spread: 78,

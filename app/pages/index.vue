@@ -36,6 +36,21 @@ const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no interne
       </div>
     </div>
 
+    <details class="help mt-5 w-full max-w-lg text-sm">
+      <summary class="help-summary cursor-pointer text-center opacity-60 transition hover:opacity-90">
+        How it works
+      </summary>
+      <div class="bg-base-100/70 mt-3 rounded-2xl p-4 text-left opacity-80 shadow-sm">
+        <p>ohloud turns your secret into sound and plays it speaker-to-microphone — no internet, no server, no pairing.</p>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>Keep both devices close, the speaker facing the microphone.</li>
+          <li>A quiet room helps — Fast needs it, Robust is forgiving.</li>
+          <li>Both sides use the <b>same password</b>.</li>
+          <li>Missed it? Press Listen again on the receiver, then Resend.</li>
+        </ul>
+      </div>
+    </details>
+
     <footer class="mt-6 text-center text-xs opacity-50">
       <AppIcon name="lock" :size="13" /> encrypted with a password · <AppIcon name="heart" :size="13" /> made with care
     </footer>
@@ -56,5 +71,21 @@ const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no interne
 .swap-leave-to {
   opacity: 0;
   transform: translateX(-12px);
+}
+.help-summary {
+  list-style: none;
+}
+.help-summary::-webkit-details-marker {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .swap-enter-active,
+  .swap-leave-active {
+    transition: none;
+  }
+  .swap-enter-from,
+  .swap-leave-to {
+    transform: none;
+  }
 }
 </style>

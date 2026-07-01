@@ -73,7 +73,7 @@ function submit() {
             </div>
           </div>
 
-          <form class="mt-4 space-y-3" @submit.prevent="submit">
+          <form class="mt-4 space-y-3" @submit.prevent="submit" @keydown.esc="emit('close')">
             <label class="input input-bordered flex w-full items-center gap-2">
               <span class="text-base-content/50 w-5 text-center"><AppIcon name="key" :size="17" /></span>
               <input
@@ -84,7 +84,7 @@ function submit() {
                 placeholder="password"
                 autocomplete="off"
               >
-              <button type="button" class="btn btn-ghost btn-xs" @click="show = !show">
+              <button type="button" class="btn btn-ghost btn-xs" :aria-label="show ? 'Hide password' : 'Show password'" @click="show = !show">
                 <AppIcon :name="show ? 'eye-off' : 'eye'" :size="17" />
               </button>
             </label>
