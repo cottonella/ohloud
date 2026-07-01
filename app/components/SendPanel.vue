@@ -2,7 +2,7 @@
 import type { AudioOutput } from '~/core'
 import { estimateDurationSec, jingleDurationSec, openAudioOutput, synthXylophoneJingle } from '~/core'
 
-type Stage = 'idle' | 'ready' | 'encoding' | 'playing' | 'done' | 'error'
+type Stage = 'idle' | 'ready' | 'encoding' | 'playing' | 'done' | 'error' | 'canceled'
 
 const codec = useCodec()
 const sound = useXylophone()
@@ -26,6 +26,7 @@ const pillReady = ref(false)
 
 let playback: { stop: () => void, finished: Promise<void> } | null = null
 let timer: ReturnType<typeof setInterval> | null = null
+let canceled = false
 
 const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 : file.value !== null))
 
@@ -50,7 +51,7 @@ const teddyMood = computed(() => {
     return 'sending'
   if (stage.value === 'done')
     return 'happy'
-  if (stage.value === 'error')
+  if (stage.value === 'error' || stage.value === 'canceled')
     return 'sad'
   return 'idle'
 })
@@ -100,6 +101,7 @@ function onKey(passphrase: string) {
 // gesture so the AudioContext is allowed to open (required on iOS).
 async function start() {
   sound.unlock() // warm the UI-sound context while we still have the gesture
+  canceled = false
   stage.value = 'encoding'
   errorMsg.value = ''
   let output: AudioOutput | null = null
@@ -123,9 +125,14 @@ async function start() {
     startProgress()
     playback = output.play(pcm)
     await playback.finished
-    progress.value = 1
-    stage.value = 'done'
-    sound.success()
+    if (canceled) {
+      stage.value = 'canceled'
+    }
+    else {
+      progress.value = 1
+      stage.value = 'done'
+      sound.success()
+    }
   }
   catch (e) {
     errorMsg.value = (e as Error).message
@@ -139,9 +146,11 @@ async function start() {
 }
 
 function stop() {
+  // Mark canceled BEFORE stopping: stopping resolves `playback.finished`, which
+  // resumes start() — it must see the cancel and land on 'canceled', not 'done'.
+  canceled = true
   playback?.stop()
   clearTimer()
-  stage.value = 'idle'
 }
 
 function reset() {
@@ -331,6 +340,22 @@ onBeforeUnmount(() => {
         </p>
         <p class="max-w-xs text-xs opacity-60">
           Didn't arrive? Have them press Listen again, then resend the same secret.
+        </p>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button class="btn btn-primary btn-sm" @click="start">
+            <AppIcon name="repeat" /> Resend
+          </button>
+          <button class="btn btn-ghost btn-sm" @click="reset">
+            Send another
+          </button>
+        </div>
+      </template>
+      <template v-else-if="stage === 'canceled'">
+        <p class="text-lg font-bold opacity-70">
+          Canceled
+        </p>
+        <p class="max-w-xs text-xs opacity-60">
+          You stopped before it finished sending.
         </p>
         <div class="flex flex-wrap justify-center gap-2">
           <button class="btn btn-primary btn-sm" @click="start">
