@@ -191,13 +191,32 @@ function retryKey() {
     passOpen.value = true
 }
 
+// The received filename is attacker-controlled (decoded from a transmission a
+// hostile sender can craft). Strip anything that lets it traverse paths on
+// download or visually spoof its extension (RTLO/bidi overrides) — both for the
+// `download` attribute and for what we show the user.
+function sanitizeFilename(raw: string): string {
+  let out = ''
+  for (const ch of raw) {
+    const c = ch.codePointAt(0)!
+    const isControl = c < 0x20 || c === 0x7F
+    const isBidi = (c >= 0x202A && c <= 0x202E) || (c >= 0x2066 && c <= 0x2069) || c === 0x200E || c === 0x200F
+    if (!isControl && !isBidi)
+      out += ch
+  }
+  out = out.replace(/[/\\]+/g, '_').replace(/^\.+/, '').trim()
+  return out.slice(0, 200) || 'download'
+}
+
+const safeFilename = computed(() => (result.value ? sanitizeFilename(result.value.filename) : ''))
+
 function downloadFile() {
   if (!result.value || result.value.isText)
     return
   const url = URL.createObjectURL(new Blob([result.value.content]))
   const a = document.createElement('a')
   a.href = url
-  a.download = result.value.filename
+  a.download = safeFilename.value
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -353,7 +372,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div v-else class="space-y-2">
-        <p><AppIcon name="file" :size="15" /> <span class="font-medium">{{ result.filename }}</span> <span class="opacity-60">({{ Math.ceil(result.content.length / 1024) }} KB)</span></p>
+        <p><AppIcon name="file" :size="15" /> <span class="font-medium">{{ safeFilename }}</span> <span class="opacity-60">({{ Math.ceil(result.content.length / 1024) }} KB)</span></p>
         <button class="btn btn-primary btn-sm" @click="downloadFile">
           <AppIcon name="download" /> Save file
         </button>

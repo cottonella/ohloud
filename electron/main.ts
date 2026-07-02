@@ -31,8 +31,11 @@ function registerAppProtocol() {
     if (rel === '/' || !path.extname(rel))
       rel = '/index.html'
 
-    const filePath = path.join(publicDir, rel.replace(/\.\.[/\\]/g, ''))
-    if (!filePath.startsWith(publicDir))
+    // Normalize once (collapses any `..`) and require the result to stay under
+    // publicDir *with* a trailing separator — so neither a crafted traversal nor
+    // a sibling directory whose name merely starts with "public" can escape.
+    const filePath = path.normalize(path.join(publicDir, rel))
+    if (filePath !== publicDir && !filePath.startsWith(publicDir + path.sep))
       return new Response('Forbidden', { status: 403 })
 
     return net.fetch(pathToFileURL(filePath).toString())
@@ -80,6 +83,26 @@ function registerMediaPermissions() {
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => isMedia(permission))
 }
 
+// Only hand real web/mail links to the OS browser — never file://, custom
+// schemes, or anything else a crafted in-page URL could smuggle to the shell.
+function openExternalSafe(url: string): void {
+  try {
+    const scheme = new URL(url).protocol
+    if (scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:')
+      void shell.openExternal(url)
+  }
+  catch {
+    // malformed URL — ignore
+  }
+}
+
+// True only for the app's own origin (prod bundle, or the dev server).
+function isAppOrigin(url: string): boolean {
+  if (isDev)
+    return url === DEV_SERVER_URL || url.startsWith(`${DEV_SERVER_URL}/`)
+  return url.startsWith('app://bundle/')
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -92,6 +115,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   })
 
@@ -99,9 +123,22 @@ function createWindow() {
 
   // Open external links in the user's browser, not inside the app window.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    openExternalSafe(url)
     return { action: 'deny' }
   })
+
+  // Lock top-level navigation to the app's own origin. A stray or injected
+  // `location = 'https://attacker…'` (or a redirect chain) must not carry this
+  // window — with its preload bridge attached — off to a remote origin; send
+  // such links to the external browser instead.
+  const guardNavigation = (e: { preventDefault: () => void }, url: string): void => {
+    if (isAppOrigin(url))
+      return
+    e.preventDefault()
+    openExternalSafe(url)
+  }
+  win.webContents.on('will-navigate', guardNavigation)
+  win.webContents.on('will-redirect', guardNavigation)
 
   if (isDev) {
     win.loadURL(DEV_SERVER_URL)

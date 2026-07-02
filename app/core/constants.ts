@@ -44,3 +44,17 @@ export interface KdfParams {
  * baseline. Override per-call for tests.
  */
 export const DEFAULT_KDF: KdfParams = { memLog2: 15, time: 3, lanes: 1 }
+
+/**
+ * Bounds the receiver enforces on a container's Argon2id params *before* running
+ * the KDF. The header is attacker-craftable (a hostile transmission can set any
+ * bytes here), and `open()` derives the key before authenticating — so without
+ * these caps a single crafted sound clip could request `2^255` KiB of memory
+ * (instant OOM) or degenerate params that throw an untyped error. The window is
+ * generous: it accepts the 32 MiB / t=3 default with headroom, and rejects only
+ * the abusive extremes. `KDF_MAX_MEM_LOG2 = 18` ⇒ a 256 MiB ceiling (8× default).
+ */
+export const KDF_MIN_MEM_LOG2 = 8 // 256 KiB floor — also keeps 2^memLog2 ≥ 8·lanes
+export const KDF_MAX_MEM_LOG2 = 18 // 256 MiB ceiling — blocks the memory bomb
+export const KDF_MAX_TIME = 16
+export const KDF_MAX_LANES = 4

@@ -4,6 +4,10 @@ import {
   CONTAINER_MAGIC,
   CONTAINER_VERSION,
   HEADER_LEN,
+  KDF_MAX_LANES,
+  KDF_MAX_MEM_LOG2,
+  KDF_MAX_TIME,
+  KDF_MIN_MEM_LOG2,
   SUITE_ARGON2ID_XCHACHA,
 } from '../constants'
 import { FormatError, UnsupportedError } from '../errors'
@@ -56,6 +60,13 @@ export function parseHeader(buf: Uint8Array): ContainerHeader {
   const memLog2 = rd.u8()
   const time = rd.u8()
   const lanes = rd.u8()
+  // The KDF params are attacker-craftable and consumed before authentication;
+  // reject a memory bomb or degenerate params before deriveMasterKey runs.
+  if (memLog2 < KDF_MIN_MEM_LOG2 || memLog2 > KDF_MAX_MEM_LOG2
+    || time < 1 || time > KDF_MAX_TIME
+    || lanes < 1 || lanes > KDF_MAX_LANES) {
+    throw new UnsupportedError(`out-of-range KDF params (m=${memLog2}, t=${time}, p=${lanes})`)
+  }
   const flags = rd.u8()
   const salt = rd.bytes(16)
   const commit = rd.bytes(32)

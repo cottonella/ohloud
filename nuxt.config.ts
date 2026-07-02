@@ -1,5 +1,29 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
+
+// Locked-down CSP for the BUILT app (web + Electron both serve this HTML).
+// Omitted in dev so Vite's HMR (which needs 'unsafe-eval' + a ws: connection)
+// keeps working. `'unsafe-inline'` on script is required by Nuxt's tiny inline
+// bootstrap — it carries a per-build buildId, so a static hash can't be pinned;
+// the app itself uses no eval, loads only same-origin assets, and runs its audio
+// worklet + codec worker from blob:. This blocks remote script/style/img/connect
+// (exfiltration + remote payloads) and object/base-tag hijacking.
+const CONTENT_SECURITY_POLICY = [
+  `default-src 'self'`,
+  `base-uri 'self'`,
+  `object-src 'none'`,
+  `form-action 'self'`,
+  `img-src 'self' data: blob:`,
+  `font-src 'self' data:`,
+  `style-src 'self' 'unsafe-inline'`,
+  `script-src 'self' 'unsafe-inline' blob:`,
+  `worker-src 'self' blob:`,
+  `connect-src 'self'`,
+  `manifest-src 'self'`,
+].join('; ')
+
+const isProd = process.env.NODE_ENV === 'production'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-06-30',
@@ -31,6 +55,8 @@ export default defineNuxtConfig({
     head: {
       title: 'ohloud',
       meta: [
+        // Production-only: keep Vite HMR unshackled in dev (see the const above).
+        ...(isProd ? [{ 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY }] : []),
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         // Installable-PWA hints — iOS needs the apple-* variants explicitly.
         { name: 'theme-color', content: '#f7eddc' },

@@ -39,7 +39,15 @@ export function open(container: Uint8Array, passphrase: string): OpenResult {
   if (ciphertext.length !== h.ctLen)
     throw new CorruptedError('ciphertext length mismatch')
 
-  const masterKey = deriveMasterKey(passphrase, h.salt, h.kdf)
+  let masterKey: Uint8Array
+  try {
+    masterKey = deriveMasterKey(passphrase, h.salt, h.kdf)
+  }
+  catch {
+    // Params passed validation but Argon2 still refused (or couldn't allocate on
+    // a low-memory device) — surface a typed error, never an untyped throw.
+    throw new CorruptedError('key derivation failed')
+  }
   if (!verifyCommitment(masterKey, h.commit)) {
     wipe(masterKey)
     throw new WrongPassphraseError()

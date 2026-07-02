@@ -40,6 +40,14 @@ export function ofdmMode(c: Constellation): number {
 
 const MAGIC = new Uint8Array([0x4F, 0x57]) // "OW"
 const HEADER_BODY_LEN = 29 // bytes covered by the CRC
+
+// The wire header is fully attacker-controlled (anyone can play sound into the
+// mic) and drives FEC allocations before any passphrase. Bound its size/param
+// fields so a crafted descriptor can't force a huge buffer or a crashing
+// per-block size. 16 MiB is hours of sound — far beyond any real transmission.
+export const MAX_BLOB_LEN = 16 * 1024 * 1024
+/** Max RS parity per 255-byte block: `per = 255 - nsym - 2` must stay ≥ 1. */
+export const MAX_FEC_NSYM = 252
 export const HEADER_DATA_LEN = 31 // body + crc16
 export const HEADER_NSYM = 32 // RS parity for the header
 export const HEADER_CODED_LEN = HEADER_DATA_LEN + HEADER_NSYM // 63
@@ -91,6 +99,15 @@ function parse(buf: Uint8Array): WireHeader {
     throw new CorruptedError('wire header CRC mismatch')
   if (protoVer !== WIRE_VERSION)
     throw new UnsupportedError(`wire protocol version ${protoVer}`)
+  // Range-check the allocation-driving fields (CRC only proves integrity, not
+  // sanity): reject an absurd blob size, an empty/degenerate block count, or a
+  // parity value that would make the per-block payload ≤ 0 (an OOB/RangeError).
+  if (blockCount < 1)
+    throw new CorruptedError('wire header block count out of range')
+  if (blobLen > MAX_BLOB_LEN)
+    throw new CorruptedError('wire header blob length out of range')
+  if (fecNsym > MAX_FEC_NSYM)
+    throw new CorruptedError('wire header FEC parity out of range')
 
   return { protoVer, mode, fec, flags, blobLen, blockCount, fecNsym, tailHash }
 }

@@ -84,6 +84,11 @@ export function fecEncode(blob: Uint8Array, params: FecParams = {}): { data: Uin
 export function fecDecode(data: Uint8Array, meta: FecMeta): Uint8Array {
   const { nsym, blockCount, origLen, fountain } = meta
   const per = payloadPerBlock(nsym)
+  // Defense in depth at the allocation site: degenerate meta (per ≤ 0 → negative
+  // buffer size / NaN block math, or blockCount < 1 → divide-by-zero deinterleave)
+  // must fail as a recoverable decode error, never an uncaught RangeError.
+  if (per <= 0 || blockCount < 1)
+    throw new FecDecodeError([])
   const codewords = deinterleave(data, blockCount)
 
   const survivors: { esi: number, data: Uint8Array }[] = []
