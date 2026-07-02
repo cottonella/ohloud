@@ -1,28 +1,69 @@
-# ohloud
+<p align="center">
+  <img src="public/pwa-192x192.png" width="96" alt="the ohloud teddy bear" />
+</p>
 
-**Send a secret from one device to another using only sound — no server, no
-internet, no pairing.** Type a message or drop a file, choose a password, and
-ohloud sings it as audible tones out your speaker. The other device listens with
-its microphone and, with the same password, decrypts it back. Everything runs
-locally in a browser or a desktop app; nothing ever touches a network.
+<h1 align="center"><em>ohloud!</em></h1>
 
-The same code runs as a **static website** and as an **Electron desktop app**.
+<p align="center">
+  <b>Send a secret from one device to another using only sound — no server, no internet, no pairing.</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/cottonella/ohloud/releases"><img alt="latest version" src="https://img.shields.io/github/v/tag/cottonella/ohloud?style=flat&label=version&color=fce6d3&labelColor=f4eee2" /></a>
+</p>
+
+Type a message or drop a small file, choose a password, and *ohloud* sings it
+out of your speaker as a little melody. The device next to it listens with its
+microphone, you type the same password, and the secret appears. That's the
+whole trick: the sound in the room **is** the connection — no account, no
+cloud, no cables, nothing to set up.
+
+Everything runs locally in your browser or on your desktop; nothing ever
+touches a network.
+
+## Get *ohloud*
+
+The same cuddly app, in whichever shape suits you:
+
+- **🌐 Online** — just visit [ohloud.com](https://ohloud.com). Nothing to
+  install; it runs entirely in your browser.
+- **📱 Web App** — install it from the website and it lives on your home
+  screen and works offline:
+  - **iPhone & iPad (Safari):** open [ohloud.com](https://ohloud.com), tap
+    **Share**, then **Add to Home Screen**, then **Add**.
+  - **Chrome-based browsers** (Chrome, Edge, Brave…): open
+    [ohloud.com](https://ohloud.com) and click the **install icon** at the
+    right end of the address bar (or browser menu → **Install app…**), then
+    **Install**. On Android: menu → **Add to Home screen**.
+  - The **Download** button inside the app walks you through the same steps.
+- **💻 Desktop app** — an Electron build for Windows, macOS and Linux, ready
+  to download from the
+  [releases page](https://github.com/cottonella/ohloud/releases).
+- **🏡 Self-hosted** — *ohloud* is a static site: run `npm run generate` and
+  put the generated site on any https-capable static host (see
+  [Develop](#develop)).
 
 ## How to use
 
 **Send** → type text or drop a file → pick 🐢 Robust or 🐇 Fast → **Share** →
 choose a **password** → press **Start** once the other device is listening.
 
-**Receive** → press **Listen** → when the sound arrives, enter the **same
+**Receive** → press **Listen** → when the melody arrives, enter the **same
 password** → the text appears (or the file downloads).
 
 Keep the two devices close in a reasonably quiet room, speaker facing the
-microphone. Missed it? Press **Listen** again on the receiver and **Resend**.
+microphone. Missed it? No worries — press **Listen** again on the receiver and
+**Resend**.
 
-## Security model
+## Is it safe?
 
-Every transmission is a self-contained encrypted container — no key exchange, no
-server, no accounts:
+The short version: your secret is locked with your password *before* it ever
+becomes sound, and it only ever exists as sound — nothing is uploaded, stored,
+or sent anywhere. Someone recording the room still needs your password, and
+guessing passwords is made deliberately, painfully slow.
+
+For the technically curious, every transmission is a self-contained encrypted
+container — no key exchange, no server, no accounts:
 
 - **Password → key:** Argon2id (32 MiB, t = 3, ≈ 2 s) stretches your password, so
   even a short one is expensive to brute-force.
@@ -34,13 +75,14 @@ server, no accounts:
 - **No metadata leaves the device**, because nothing leaves the device.
 
 The password is the entire security boundary — **use a strong, high-entropy one.**
-Full threat model and residual risks (replay, jamming, passphrase entropy) are in
-[SECURITY.md](SECURITY.md); the exact wire format is in [FORMAT.md](FORMAT.md).
 
-## Speed & size
+## How fast is it?
 
-Sound is a slow channel, so ohloud is for **secrets, not file transfers**. Two
-tiers; the app shows the estimated **transmission time** before you send:
+Sound is an inherently low-bandwidth channel, so *ohloud* is at its best with
+**short secrets** — passwords, keys, notes. Sending **files** is fully
+supported as well, though transfer time grows with size, making it practical
+mainly for small ones. Two modes are available, and the app shows the estimated
+**transmission time** before you send:
 
 | Mode | Rate | Best for |
 |---|---|---|
@@ -55,26 +97,37 @@ Rough Robust transmission times:
 | a short message (~1 KB) | ~30 s |
 | a small file (~10 KB) | ~4 min |
 
-Files carry ~25% **RaptorQ** repair blocks, so a lost chunk heals. 1 MB is
-impractical over sound (tens of minutes).
+Files carry ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB
+is impractical over sound (tens of minutes).
 
-## Supported browsers / OS
+## Will it work on my devices?
 
-- **Browsers:** any with Web Audio + `getUserMedia` — Chrome / Edge, Safari,
-  Firefox. The microphone needs a **secure context** (https or `localhost`).
-- **Desktop:** the Electron app (Windows / macOS / Linux) uses the same Web Audio
-  path; macOS prompts once for microphone consent.
+- **Browsers:**
+  <img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/chrome/chrome_24x24.png" width="16" height="16" alt="Chrome" /> Chrome ·
+  <img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/edge/edge_24x24.png" width="16" height="16" alt="Edge" /> Edge ·
+  <img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/safari/safari_24x24.png" width="16" height="16" alt="Safari" /> Safari ·
+  <img src="https://raw.githubusercontent.com/alrra/browser-logos/main/src/firefox/firefox_24x24.png" width="16" height="16" alt="Firefox" /> Firefox
+  — the microphone needs a **secure page** (https or `localhost`).
+- **Desktop:**
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg" width="15" height="15" alt="Windows" /> Windows ·
+  <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Apple_logo_grey.svg" width="13" height="15" alt="macOS" /> macOS ·
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="16" height="16" alt="Linux" /> Linux
+  — the Electron app uses the same Web Audio path; macOS asks once for
+  microphone consent.
+- **Mobile:**
+  <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Apple_logo_grey.svg" width="13" height="15" alt="iOS" /> iOS ·
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/android/android-original.svg" width="16" height="16" alt="Android" /> Android
+  — right in the browser, or installed as the Web App.
 - **Cross-device:** Robust interoperates across any sample rates; Fast is best at
   a shared 48 kHz (it resamples otherwise).
 
-## How it works (short version)
+## How it works (the short tour)
 
 Text/file → compress → **encrypt** (container) → **Reed–Solomon + RaptorQ** error
 correction → modulate to **PCM tones**: a sync chirp, an RS-protected header, then
 the payload as **MFSK** (Robust) or **OFDM** (Fast). The receiver reverses it —
 find the chirp, read the header, demodulate, correct errors, verify a tail hash,
-decrypt. Protocol details in [FORMAT.md](FORMAT.md); design rationale in
-[RESEARCH.md](RESEARCH.md).
+decrypt.
 
 The engine (`app/core/`) is framework-agnostic TypeScript, pure-JS (no WASM), and
 unit-tested; the Vue UI and Electron shell are thin layers over it.
@@ -118,29 +171,24 @@ npm run bench      # pure-JS acoustic channel calibration (no hardware)
 npm run lint       # eslint . (add --fix)
 ```
 
-## Project structure
-
-```
-app/
-  core/         # the engine: crypto · container · fec · dsp · protocol · audio
-  components/   # Vue UI — teddy mascot, send/receive panels, icons, modal
-  pages/        # single-screen app
-electron/       # desktop shell (app:// protocol, mic permission)
-bench/          # pure-JS acoustic channel model + calibration bench
-FORMAT.md · RESEARCH.md · SECURITY.md · ICON-THEME.md · TASKS.md
-```
-
 ## License
 
-ohloud is **dual-licensed** — pick whichever fits your use:
+*ohloud* is **dual-licensed** — pick whichever fits your use:
 
 - **Open source: [GNU AGPL-3.0-only](LICENSE).** Free to use, study, modify, and
-  self-host. The AGPL's one catch: if you distribute ohloud or run a modified
+  self-host. The AGPL's one catch: if you distribute *ohloud* or run a modified
   version for others (including as a network service), you must release your
   **complete corresponding source** under the AGPL too.
-- **Commercial license.** To use ohloud in a closed-source product or service — or
-  otherwise without the AGPL's copyleft obligations — a separate paid license is
-  available. Reach out via [github.com/cottonella](https://github.com/cottonella).
+- **Commercial license.** To use *ohloud* in a closed-source product or service —
+  or otherwise without the AGPL's copyleft obligations — a separate paid license
+  is available. Reach out via [github.com/cottonella](https://github.com/cottonella).
 
 Copyright © 2026 cottonella. Contributions are accepted under the terms in
 [CONTRIBUTING.md](CONTRIBUTING.md), which keep this dual license possible.
+
+---
+
+<p align="center">
+  <img src=".github/assets/pill-made-with-love.svg" height="36" alt="Made with love" />&nbsp;
+  <a href="https://ko-fi.com/cottonella"><img src=".github/assets/pill-buy-me-a-coffee.svg" height="36" alt="Buy me a coffee" /></a>
+</p>
