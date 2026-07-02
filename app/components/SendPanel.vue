@@ -2,7 +2,7 @@
 import type { AudioOutput } from '~/core'
 import { estimateDurationSec, jingleDurationSec, openAudioOutput, synthXylophoneJingle } from '~/core'
 
-type Stage = 'idle' | 'ready' | 'encoding' | 'playing' | 'done' | 'error' | 'canceled'
+type Stage = 'idle' | 'ready' | 'blocked' | 'encoding' | 'playing' | 'done' | 'error' | 'canceled'
 
 const codec = useCodec()
 const sound = useXylophone()
@@ -27,6 +27,8 @@ const pillReady = ref(false)
 let playback: { stop: () => void, finished: Promise<void> } | null = null
 let timer: ReturnType<typeof setInterval> | null = null
 let canceled = false
+let abortAudio: AbortController | null = null
+let retryAudio: (() => void) | null = null
 
 const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 : file.value !== null))
 
@@ -51,7 +53,7 @@ const teddyMood = computed(() => {
     return 'sending'
   if (stage.value === 'done')
     return 'happy'
-  if (stage.value === 'error' || stage.value === 'canceled')
+  if (stage.value === 'error' || stage.value === 'canceled' || stage.value === 'blocked')
     return 'sad'
   return 'idle'
 })
@@ -100,15 +102,34 @@ function onKey(passphrase: string) {
 // Encode + play. Reused by the initial Start and by Resend. Runs from a user
 // gesture so the AudioContext is allowed to open (required on iOS).
 async function start() {
-  sound.unlock() // warm the UI-sound context while we still have the gesture
   canceled = false
   stage.value = 'encoding'
   errorMsg.value = ''
   let output: AudioOutput | null = null
+  abortAudio = new AbortController()
   try {
     // Open the speaker first and encode at its REAL rate — iOS often isn't 48 kHz,
     // and matching it avoids a lossy browser resample that would corrupt Fast/OFDM.
-    output = await openAudioOutput()
+    // If iOS has wedged the audio session (force-closed-and-relaunched app), this
+    // shows lock/unlock guidance and resolves by itself once the session thaws.
+    output = await openAudioOutput({
+      signal: abortAudio.signal,
+      onWedged: () => {
+        // Audio is wedged — drop EVERY context we hold (the UI-sound one
+        // included) so the OS can re-establish a clean session during the
+        // recovery trip, then guide the user through it. A single surviving
+        // context would deadlock the recovery.
+        sound.release()
+        stage.value = 'blocked'
+      },
+      onRetryAvailable: (retry) => {
+        retryAudio = retry
+      },
+    })
+    // The speaker session is live now — safe to warm the UI-sound context for
+    // the gesture-less success blip. Never before the wedge check (see onWedged).
+    sound.unlock()
+    stage.value = 'encoding'
     outputRate.value = output.sampleRate
     const reply = mode.value === 'text'
       ? await codec.encodeText(text.value, pendingPass.value, output.sampleRate, speed.value)
@@ -135,14 +156,32 @@ async function start() {
     }
   }
   catch (e) {
-    errorMsg.value = (e as Error).message
-    stage.value = 'error'
+    if ((e as Error).name === 'AbortError') {
+      // The user backed out of the lock/unlock wait — not an error.
+      stage.value = 'ready'
+    }
+    else {
+      errorMsg.value = (e as Error).message
+      stage.value = 'error'
+    }
   }
   finally {
     clearTimer()
     output?.close()
     playback = null
+    abortAudio = null
+    retryAudio = null
   }
+}
+
+// The Continue tap after a lock/unlock — the user gesture iOS requires
+// before it lets audio start again.
+function retryBlocked() {
+  retryAudio?.()
+}
+
+function cancelBlocked() {
+  abortAudio?.abort()
 }
 
 function stop() {
@@ -313,6 +352,22 @@ onBeforeUnmount(() => {
           <AppIcon name="play" /> Start
         </button>
         <button class="btn btn-ghost btn-sm" @click="stage = 'idle'">
+          Back
+        </button>
+      </template>
+      <template v-else-if="stage === 'blocked'">
+        <p class="flex items-center justify-center gap-1.5 font-medium">
+          <AppIcon name="lock" :size="16" /> iOS has muted the app's sound
+        </p>
+        <p class="max-w-xs text-sm opacity-70">
+          A known iOS 26 bug mutes web apps after they're force-closed.
+          <br><b>1.</b> Go to the Home Screen and reopen ohloud (or lock &amp; unlock).
+          <br><b>2.</b> Tap Continue.
+        </p>
+        <button class="btn btn-primary" @click="retryBlocked">
+          <AppIcon name="play" /> Continue
+        </button>
+        <button class="btn btn-ghost btn-sm" @click="cancelBlocked">
           Back
         </button>
       </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { startListening } from '~/core'
 
-type Stage = 'idle' | 'listening' | 'receiving' | 'captured' | 'decoding' | 'done' | 'error'
+type Stage = 'idle' | 'blocked' | 'listening' | 'receiving' | 'captured' | 'decoding' | 'done' | 'error'
 
 // Unique per instance, so each panel's pixelate filter has its own id.
 let filterSeq = 0
@@ -36,6 +36,8 @@ const overlayOpacity = computed(() => Math.min(1, Math.max(0, (0.5 - prog.value)
 let listener: { stop: () => void } | null = null
 let captured: { pcm: Float32Array, sampleRate: number } | null = null
 let pixelRaf = 0
+let abortAudio: AbortController | null = null
+let retryAudio: (() => void) | null = null
 
 function prefersReducedMotion() {
   return !!(import.meta.client && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
@@ -79,7 +81,7 @@ const teddyMood = computed(() => {
     return 'listening'
   if (stage.value === 'done')
     return 'happy'
-  if (stage.value === 'error')
+  if (stage.value === 'error' || stage.value === 'blocked')
     return 'sad'
   return 'idle'
 })
@@ -87,15 +89,31 @@ const teddyMood = computed(() => {
 const levelPct = computed(() => Math.min(100, Math.round(micLevel.value * 320)))
 
 async function listen() {
-  sound.unlock() // warm the UI-sound context while we have the gesture
   errorMsg.value = ''
   result.value = null
   revealed.value = false
   copied.value = false
   prog.value = 0
   recvProgress.value = 0
+  abortAudio = new AbortController()
   try {
     listener = await startListening({
+      // A wedged iOS session (force-closed-and-relaunched app) delivers mic
+      // silence behind a lit indicator. First wedge: try the reload experiment
+      // (a fresh document in a fully-active app may negotiate a clean session);
+      // a wedge that survives the reload gets the guided recovery card.
+      signal: abortAudio.signal,
+      onWedged: () => {
+        // Audio is wedged — drop EVERY context we hold (the UI-sound one
+        // included) so the OS can re-establish a clean session during the
+        // recovery trip, then guide the user through it. A single surviving
+        // context would deadlock the recovery.
+        sound.release()
+        stage.value = 'blocked'
+      },
+      onRetryAvailable: (retry) => {
+        retryAudio = retry
+      },
       onLevel: l => (micLevel.value = l),
       onSync: () => (stage.value = 'receiving'),
       onProgress: (r, t) => (recvProgress.value = t > 0 ? r / t : 0),
@@ -109,14 +127,37 @@ async function listen() {
         stage.value = 'error'
       },
     })
+    // The mic session is live now — safe to warm the UI-sound context for the
+    // gesture-less success blip. Never before the wedge check (see onWedged).
+    sound.unlock()
     stage.value = 'listening'
   }
   catch (e) {
-    errorMsg.value = (e as Error).name === 'NotAllowedError'
-      ? 'Microphone permission was denied.'
-      : (e as Error).message
-    stage.value = 'error'
+    if ((e as Error).name === 'AbortError') {
+      // The user backed out of the recovery wait — not an error.
+      stage.value = 'idle'
+    }
+    else {
+      errorMsg.value = (e as Error).name === 'NotAllowedError'
+        ? 'Microphone permission was denied.'
+        : (e as Error).message
+      stage.value = 'error'
+    }
   }
+  finally {
+    abortAudio = null
+    retryAudio = null
+  }
+}
+
+// The Continue tap after the recovery round trip — the user gesture iOS
+// requires before it lets audio start again.
+function retryBlocked() {
+  retryAudio?.()
+}
+
+function cancelBlocked() {
+  abortAudio?.abort()
 }
 
 function stop() {
@@ -185,6 +226,7 @@ function reset() {
 }
 
 onBeforeUnmount(() => {
+  abortAudio?.abort()
   listener?.stop()
   cancelAnimationFrame(pixelRaf)
 })
@@ -205,6 +247,24 @@ onBeforeUnmount(() => {
       </p>
       <button class="btn btn-primary btn-lg" :disabled="insecure" @click="listen">
         <AppIcon name="listen" /> Listen
+      </button>
+    </template>
+
+    <!-- wedged iOS audio session — guide the proven recovery -->
+    <template v-else-if="stage === 'blocked'">
+      <p class="flex items-center justify-center gap-1.5 font-medium">
+        <AppIcon name="lock" :size="16" /> iOS has muted the app's sound
+      </p>
+      <p class="max-w-xs text-sm opacity-70">
+        A known iOS 26 bug mutes web apps after they're force-closed.
+        <br><b>1.</b> Go to the Home Screen and reopen ohloud (or lock &amp; unlock).
+        <br><b>2.</b> Tap Continue.
+      </p>
+      <button class="btn btn-primary" @click="retryBlocked">
+        <AppIcon name="play" /> Continue
+      </button>
+      <button class="btn btn-ghost btn-sm" @click="cancelBlocked">
+        Back
       </button>
     </template>
 

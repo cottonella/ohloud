@@ -11,6 +11,7 @@ permissions:
   contents: write # create the GitHub Release
   pages: write # deploy to GitHub Pages
   id-token: write # OIDC token the Pages deploy needs
+  actions: write # prune a stale github-pages artifact left by a re-run
 
 concurrency:
   group: release-${{ github.ref }}
@@ -62,6 +63,21 @@ jobs:
             echo "CNAME set to ${{ vars.SITE_DOMAIN }}"
           fi
       - uses: actions/configure-pages@v5
+      # A re-run leaves the previous attempt's immutable `github-pages` artifact
+      # in place; uploading a second makes deploy-pages choke on "Multiple
+      # artifacts named github-pages". Prune any leftovers before we upload —
+      # only ever needed from attempt 2 onward, so the first run pays nothing.
+      - name: Drop a stale github-pages artifact from a previous attempt
+        if: ${{ github.run_attempt > 1 }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+            --jq '.artifacts[] | select(.name=="github-pages") | .id' \
+          | while read -r id; do
+              echo "Deleting stale github-pages artifact $id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
+            done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .output/public

@@ -66,13 +66,27 @@ export function useXylophone() {
   }
 
   // Warm up the AudioContext during a user gesture (needed on iOS) so later,
-  // gesture-less success sounds are allowed to play.
+  // gesture-less success sounds are allowed to play. Call this only AFTER the
+  // real audio session is confirmed live — a UI-sound context created before
+  // the wedge check sits alive across the recovery trip and deadlocks it.
   function unlock(): void {
     ensure()
   }
 
+  // Drop the shared context entirely. Called the moment a wedge is detected:
+  // any context alive across the recovery trip stops iOS re-establishing the
+  // session. It lazily rebuilds on the next unlock()/success() once audio works.
+  function release(): void {
+    if (ctx) {
+      void ctx.close()
+      ctx = null
+      bus = null
+    }
+  }
+
   return {
     unlock,
+    release,
     /** Play the success blip (a message sent or received). */
     success: () => playSeq(BLIP),
   }

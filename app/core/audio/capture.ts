@@ -8,8 +8,10 @@
 // chirp. The worklet batches samples (~2048) to keep message traffic light.
 
 import type { WireHeader } from '../protocol/wire-header'
+import type { UnwedgeOptions } from './unwedge'
 import { FrameReceiver } from '../protocol/receiver'
 import { rms } from './level'
+import { acquireLiveContext } from './unwedge'
 
 const CAPTURE_WORKLET = `
 class OhloudCapture extends AudioWorkletProcessor {
@@ -35,7 +37,7 @@ class OhloudCapture extends AudioWorkletProcessor {
 registerProcessor('ohloud-capture', OhloudCapture)
 `
 
-export interface ListenOptions {
+export interface ListenOptions extends UnwedgeOptions {
   onLevel?: (level: number) => void
   onSync?: (offset: number) => void
   onHeader?: (header: WireHeader, frameSamples: number) => void
@@ -50,12 +52,23 @@ export interface ListenHandle {
 }
 
 export async function startListening(opts: ListenOptions = {}): Promise<ListenHandle> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false, channelCount: 1 },
-  })
-  const ctx = new AudioContext({ sampleRate: 48000 })
-  if (ctx.state === 'suspended')
-    await ctx.resume()
+  // Acquire a PROVABLY rendering context FIRST, inside the user's tap — a
+  // wedged iOS session delivers mic silence while the indicator claims to
+  // listen, so the meter would lie forever. acquireLiveContext() detects that
+  // (onWedged → recovery guidance) instead. No sampleRate option: iOS requires
+  // letting the browser pick, and the protocol is rate-independent anyway.
+  const ctx = await acquireLiveContext(opts)
+
+  let stream: MediaStream
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false, channelCount: 1 },
+    })
+  }
+  catch (e) {
+    ctx.close().catch(() => {})
+    throw e
+  }
 
   const url = URL.createObjectURL(new Blob([CAPTURE_WORKLET], { type: 'application/javascript' }))
   await ctx.audioWorklet.addModule(url)
