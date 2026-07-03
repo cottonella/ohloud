@@ -5,7 +5,7 @@
 # glibc (slim), not alpine/musl: the lockfile may be resolved on another OS and
 # musl trips Rollup/esbuild's platform-specific binary resolution. This stage is
 # discarded anyway — only the tiny nginx image below ships.
-FROM node:24-slim AS build
+FROM node:26-slim AS build
 WORKDIR /app
 
 # Install against the lockfile first (this layer is cached until deps change).
