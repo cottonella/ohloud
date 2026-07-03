@@ -39,9 +39,9 @@ The same cuddly app, in whichever shape suits you:
 - **💻 Desktop app** — an Electron build for Windows, macOS and Linux, ready
   to download from the
   [releases page](https://github.com/cottonella/ohloud/releases).
-- **🏡 Self-hosted** — *ohloud* is a static site: run `npm run generate` and
-  put the generated site on any https-capable static host (see
-  [Develop](#develop)).
+- **🏡 Self-hosted** — *ohloud* is a static site with no backend: serve it with
+  Docker or drop the generated folder on any static host (see
+  [Self-host](#self-host)).
 
 ## How to use
 
@@ -162,6 +162,38 @@ npm run dist       # + package a distributable .zip / AppImage (no installer)
 
 Targets are `zip` (Windows/macOS) and `AppImage` (Linux) in `package.json` →
 `build`; switch to `nsis`/`dmg` for an installer.
+
+## Self-host
+
+*ohloud* has **no backend** — it's a static bundle, so hosting it is just serving
+a folder. Nothing phones home; once loaded it runs entirely on-device (and fully
+offline after it's installed).
+
+**With Docker** — build the site and serve it with nginx:
+
+```bash
+docker build -t ohloud .
+docker run --rm -p 8080:80 ohloud
+# → http://localhost:8080
+```
+
+**Without Docker** — put the generated files on any static host:
+
+```bash
+npm ci
+npm run generate   # → .output/public
+# then serve .output/public with nginx, Caddy, `npx serve`, a Pi, a USB stick…
+```
+
+> **One requirement:** the microphone needs a **secure context**, so serve it over
+> **HTTPS** (or `localhost`). Plain `http://` on a LAN loads the page, but the
+> Receive tab's mic won't start. Put it behind any TLS-terminating reverse proxy
+> (Caddy does this automatically) and you're set.
+
+The bundled [`docker/nginx.conf`](docker/nginx.conf) ships the SPA fallback
+(client-side routes → `index.html`), long-caches the content-hashed assets, keeps
+the service worker fresh, and adds a few hardening headers (`X-Frame-Options`,
+`X-Content-Type-Options`).
 
 ## Test & lint
 

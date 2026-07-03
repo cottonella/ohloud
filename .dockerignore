@@ -1,0 +1,12 @@
+# Keep the build context small and reproducible: reinstall deps in-image and
+# regenerate the site, so never ship host artifacts.
+node_modules
+.output
+.nuxt
+dist-electron
+electron/dist
+.git
+.github
+.vscode
+.claude
+*.log
