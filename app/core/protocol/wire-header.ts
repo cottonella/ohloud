@@ -6,6 +6,7 @@
 
 import type { Constellation } from '../dsp/ofdm'
 import { ByteReader, bytesEqualCT, ByteWriter } from '../bytes'
+import { OFDM_BAND_HZ, OFDM_WIDE_BAND_HZ } from '../dsp/ofdm'
 import { CorruptedError, UnsupportedError } from '../errors'
 import { crc16 } from '../fec/crc'
 import { ReedSolomonError, rsDecode, rsEncode } from '../fec/reed-solomon'
@@ -15,12 +16,17 @@ export const MODE_MFSK = 0x00
 export const MODE_OFDM_QPSK = 0x01
 export const MODE_OFDM_QAM16 = 0x02
 export const MODE_OFDM_QAM64 = 0x03
+/**
+ * QPSK over the wide 10 kHz lane — Fast's default since v0.4. Old receivers
+ * see an unknown mode and reject cleanly; new receivers decode both lanes.
+ */
+export const MODE_OFDM_QPSK_WIDE = 0x04
 export const FEC_RS = 0x00
 export const FEC_RS_FOUNTAIN = 0x01 // inner RS per block + a RaptorQ fountain across blocks
 
 /** True if `mode` selects the Fast OFDM payload modem. */
 export function modeIsOfdm(mode: number): boolean {
-  return mode >= MODE_OFDM_QPSK && mode <= MODE_OFDM_QAM64
+  return (mode >= MODE_OFDM_QPSK && mode <= MODE_OFDM_QAM64) || mode === MODE_OFDM_QPSK_WIDE
 }
 
 /** True if the receiver knows how to demodulate this payload mode. */
@@ -30,7 +36,14 @@ export function modeIsKnown(mode: number): boolean {
 
 /** OFDM constellation carried by an OFDM mode byte (defaults to 16-QAM). */
 export function modeConstellation(mode: number): Constellation {
-  return mode === MODE_OFDM_QPSK ? 'qpsk' : mode === MODE_OFDM_QAM64 ? 'qam64' : 'qam16'
+  return mode === MODE_OFDM_QPSK || mode === MODE_OFDM_QPSK_WIDE
+    ? 'qpsk'
+    : mode === MODE_OFDM_QAM64 ? 'qam64' : 'qam16'
+}
+
+/** Subcarrier band ceiling (Hz) carried by an OFDM mode byte. */
+export function modeBandHz(mode: number): number {
+  return mode === MODE_OFDM_QPSK_WIDE ? OFDM_WIDE_BAND_HZ : OFDM_BAND_HZ
 }
 
 /** Mode byte for an OFDM constellation. */

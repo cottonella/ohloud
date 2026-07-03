@@ -10,7 +10,7 @@ import { crossCorrelate, synthChirp } from '../dsp/chirp'
 import { bytesPerSymbol, DEFAULT_MFSK, demodulateMfsk, framesToSamples, mfskConfig, modulateMfsk } from '../dsp/mfsk'
 import { demodulateOfdm, modulateOfdm, OFDM_RATE, ofdmConfig, ofdmPayloadSamples } from '../dsp/ofdm'
 import { resample } from '../dsp/resample'
-import { decodeWireHeader, HEADER_CODED_LEN, MODE_MFSK, modeConstellation, modeIsOfdm } from './wire-header'
+import { decodeWireHeader, HEADER_CODED_LEN, MODE_MFSK, modeBandHz, modeConstellation, modeIsOfdm } from './wire-header'
 
 export const DEFAULT_SAMPLE_RATE = 48000
 export const CHIRP_F0 = 1500
@@ -44,7 +44,7 @@ export function payloadSamples(sampleRate: number, blockCount: number, mode: num
   if (modeIsOfdm(mode)) {
     // OFDM is generated at OFDM_RATE; on the air it occupies the same physical
     // time, which is this many samples at the device rate.
-    const need = ofdmPayloadSamples(bytes, ofdmConfig(modeConstellation(mode)))
+    const need = ofdmPayloadSamples(bytes, ofdmConfig(modeConstellation(mode), modeBandHz(mode)))
     return Math.round((need * sampleRate) / OFDM_RATE)
   }
   const symbols = Math.ceil(bytes / bytesPerSymbol(DEFAULT_MFSK))
@@ -78,7 +78,7 @@ export function assembleFrame(headerCoded: Uint8Array, fecData: Uint8Array, samp
 
   // Synthesize on OFDM's canonical 48 kHz grid, then resample to the device rate
   // so the whole frame shares one rate (physical tones are preserved).
-  const canonical = modulateOfdm(fecData, ofdmConfig(modeConstellation(mode)))
+  const canonical = modulateOfdm(fecData, ofdmConfig(modeConstellation(mode), modeBandHz(mode)))
   const payload = sampleRate === OFDM_RATE ? canonical : resample(canonical, OFDM_RATE, sampleRate)
   const guard = new Float32Array(ofdmGuardSamples(sampleRate, mode))
   return concatFloat32([chirp, header, guard, payload])
@@ -135,7 +135,7 @@ export function parseFrame(pcm: Float32Array, sampleRate = DEFAULT_SAMPLE_RATE, 
   const payloadBytes = RS_BLOCK * header.blockCount
   let fecData: Uint8Array
   if (modeIsOfdm(header.mode)) {
-    const ocfg = ofdmConfig(modeConstellation(header.mode))
+    const ocfg = ofdmConfig(modeConstellation(header.mode), modeBandHz(header.mode))
     const need = ofdmPayloadSamples(payloadBytes, ocfg) // samples at OFDM_RATE
     // Trailing slack (a symbol + ~2% of the payload) so a device sample-clock
     // offset that STRETCHES the payload isn't truncated before the demod's SFO

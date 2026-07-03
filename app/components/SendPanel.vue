@@ -41,12 +41,14 @@ const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 :
 const SETTLE_SEC = 0.5
 
 const estimate = computed(() => {
+  // Repair fraction is omitted on purpose: the estimator applies the same
+  // per-mode FEC policy as the encoder, so the shown time tracks the frame.
   const j = jingleDurationSec() + SETTLE_SEC
   if (mode.value === 'text') {
     const bytes = new TextEncoder().encode(text.value).length
-    return estimateDurationSec(bytes, 17, 48000, speed.value, 0.25) + j
+    return estimateDurationSec(bytes, 17, 48000, speed.value) + j
   }
-  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value, 0.25) + j : 0
+  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value) + j : 0
 })
 
 const estimateLabel = computed(() => {

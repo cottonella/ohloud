@@ -88,7 +88,7 @@ mainly for small ones. Two modes are available, and the app shows the estimated
 | Mode | Effective rate | Best for |
 |---|---|---|
 | 🐢 **Robust** (MFSK) | ~50–70 B/s | noisy rooms, cross-device, any speaker |
-| 🐇 **Fast** (OFDM / QPSK) | ~0.3–0.45 KB/s | a quiet room with the devices close |
+| 🐇 **Fast** (OFDM / QPSK) | ~0.4–0.8 KB/s | a quiet room with the devices close |
 
 Rough end-to-end times (chime included), measured in the acoustic loopback
 bench and decoded through each mode's advertised room:
@@ -96,8 +96,8 @@ bench and decoded through each mode's advertised room:
 | Payload | 🐢 Robust | 🐇 Fast |
 |---|---|---|
 | a password (~30 B) | ~7 s | ~3 s |
-| a short message (~1 KB) | ~21 s | ~5 s |
-| a small file (~10 KB) | ~2.5 min | ~25 s |
+| a short message (~1 KB) | ~21 s | ~4 s |
+| a small file (~10 KB) | ~2.5 min | ~14 s |
 
 Rates are all-inclusive — encryption, error correction, framing. Files carry
 ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB is

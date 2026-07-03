@@ -31,18 +31,27 @@ export interface OfdmConfig {
   amplitude: number
 }
 
-export function ofdmConfig(constellation: Constellation): OfdmConfig {
+/**
+ * Subcarrier band ceilings (Hz). Classic is the v1 Fast lane. Wide carries
+ * ~1.7× the subcarriers: the speed lab measured it surviving the quiet AND
+ * normal room presets exactly like classic (per-bin equalization absorbs the
+ * high-end tilt, RS parity eats the weak-bin errors). It stops at 10 kHz
+ * because real speakers/mics roll off hard above that — the sim's gentle
+ * one-pole lowpass is kinder than physics.
+ */
+export const OFDM_BAND_HZ = 6500
+export const OFDM_WIDE_BAND_HZ = 10000
+
+export function ofdmConfig(constellation: Constellation, bandHighHz: number = OFDM_BAND_HZ): OfdmConfig {
   const fftSize = 1024
-  // Subcarriers span 1500–6500 Hz — the band consumer speakers/mics actually
-  // reproduce (the same range Robust MFSK uses). Going higher looks faster on
-  // paper but real devices roll off by ~6–8 kHz, and an attenuated subcarrier
-  // divided by its near-zero channel estimate becomes a noise amplifier.
+  // Subcarriers span 1500 Hz up to the lane's ceiling. Which ceiling applies
+  // is carried by the wire mode byte, so both ends always agree.
   return {
     sampleRate: OFDM_RATE,
     fftSize,
     cpSize: 256,
     binLow: Math.round((1500 * fftSize) / OFDM_RATE), // 32
-    binHigh: Math.round((6500 * fftSize) / OFDM_RATE), // 139
+    binHigh: Math.round((bandHighHz * fftSize) / OFDM_RATE), // 6500→139, 10000→213
     pilotSpacing: 5, // tracks a room's reflection comb up to ~N/10 samples of delay
     constellation,
     amplitude: 0.7,
