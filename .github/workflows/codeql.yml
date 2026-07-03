@@ -1,0 +1,35 @@
+name: CodeQL
+
+# Static security analysis of the TypeScript/JS code AND the Actions workflows
+# themselves (the 'actions' language catches workflow-injection patterns).
+# Free for public repos. Runs on pushes and PRs to main, plus a weekly sweep
+# so newly published CodeQL queries get applied to unchanged code too.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '31 6 * * 1' # Mondays 06:31 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload findings to the Security tab
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v3

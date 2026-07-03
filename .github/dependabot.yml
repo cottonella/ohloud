@@ -1,0 +1,24 @@
+# Weekly dependency watch across all three ecosystems the repo actually uses.
+# Minor/patch npm bumps arrive grouped as one PR to keep the noise down;
+# majors (and anything security-flagged) still get their own.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
