@@ -197,9 +197,14 @@ jobs:
     needs: [verify, desktop]
     runs-on: ubuntu-latest
     steps:
-      - name: Download all desktop artifacts
+      # Only the desktop artifacts — without a pattern, merge-multiple pulls
+      # EVERY artifact on the run (the pages tarball, and since build-push v7 a
+      # *.dockerbuild build record), and any one of them failing to download
+      # fails the whole job.
+      - name: Download the desktop artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: ohloud-*
           path: /tmp/dl
           merge-multiple: true
       - name: List what we got
