@@ -7,6 +7,9 @@
   "author": "cottonella",
   "license": "AGPL-3.0-only",
   "main": "electron/dist/main.cjs",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "postinstall": "nuxt prepare",
     "dev": "nuxt dev",

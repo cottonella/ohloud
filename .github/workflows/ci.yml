@@ -24,7 +24,9 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: 24 # ships npm 11 — must match the lockfile toolchain
+          # engines.node is the single source of truth — bump it there (plus the
+          # Dockerfile's FROM) at LTS time and every workflow follows.
+          node-version-file: package.json
           cache: npm
       - name: Install (skip Electron binary — nothing is packaged here)
         run: npm ci
