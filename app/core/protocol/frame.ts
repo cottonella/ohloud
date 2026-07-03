@@ -137,17 +137,21 @@ export function parseFrame(pcm: Float32Array, sampleRate = DEFAULT_SAMPLE_RATE, 
   if (modeIsOfdm(header.mode)) {
     const ocfg = ofdmConfig(modeConstellation(header.mode))
     const need = ofdmPayloadSamples(payloadBytes, ocfg) // samples at OFDM_RATE
+    // Trailing slack (a symbol + ~2% of the payload) so a device sample-clock
+    // offset that STRETCHES the payload isn't truncated before the demod's SFO
+    // correction can compress it back onto the grid — see demodulateOfdm.
     if (sampleRate === OFDM_RATE) {
       // Hand the demod a lead margin (into the guard) before the nominal start so
       // its cyclic-prefix timing sync can lock onto the true symbol boundary.
       const lead = Math.min(payloadOff, ocfg.cpSize)
-      fecData = demodulateOfdm(pcm.subarray(payloadOff - lead, payloadOff + need), payloadBytes, ocfg)
+      const tail = ocfg.cpSize + Math.ceil(need * 0.02)
+      fecData = demodulateOfdm(pcm.subarray(payloadOff - lead, Math.min(pcm.length, payloadOff + need + tail)), payloadBytes, ocfg)
     }
     else {
       // Resample the payload back onto OFDM's 48 kHz grid, with lead + tail margin
       // so the resampler edges and the demod's CP timing sync both have slack.
       const regionLen = payloadSamples(sampleRate, header.blockCount, header.mode)
-      const margin = Math.round(((ocfg.fftSize + ocfg.cpSize) * sampleRate) / OFDM_RATE)
+      const margin = Math.round(((ocfg.fftSize + ocfg.cpSize) * sampleRate) / OFDM_RATE) + Math.ceil(regionLen * 0.02)
       const lead = Math.min(payloadOff, Math.round((ocfg.cpSize * sampleRate) / OFDM_RATE))
       const to = Math.min(pcm.length, payloadOff + regionLen + margin)
       fecData = demodulateOfdm(resample(pcm.subarray(payloadOff - lead, to), sampleRate, OFDM_RATE), payloadBytes, ocfg)

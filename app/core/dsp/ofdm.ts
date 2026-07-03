@@ -11,6 +11,7 @@
 // FEC + pilots handle band-limiting and frequency-selective fading.
 
 import { fft, ifft } from './fft'
+import { resample } from './resample'
 
 /** The canonical rate OFDM is defined at; framing resamples to/from device rate. */
 export const OFDM_RATE = 48000
@@ -213,6 +214,109 @@ function interpTable(dataBins: number[], pilots: number[]): Interp[] {
   })
 }
 
+// Cyclic-prefix timing sync: the CP is a copy of each symbol's tail, so the start
+// lag that best correlates CP↔tail (summed over symbols) is the true symbol
+// boundary. The caller hands us a region with lead margin so this can search.
+function cpTimingSync(pcm: Float32Array, numSyms: number, symLen: number, N: number, cpSize: number): number {
+  const slack = Math.max(0, pcm.length - numSyms * symLen)
+  if (slack <= 0)
+    return 0
+  const maxLag = Math.min(slack, 2 * cpSize)
+  let best = -Infinity
+  let lag = 0
+  for (let L = 0; L <= maxLag; L++) {
+    let cr = 0
+    let ea = 0
+    let eb = 0
+    for (let s = 0; s < numSyms; s++) {
+      const p = L + s * symLen
+      for (let i = 0; i < cpSize; i++) {
+        const a = pcm[p + i] ?? 0
+        const b = pcm[p + N + i] ?? 0
+        cr += a * b
+        ea += a * a
+        eb += b * b
+      }
+    }
+    const score = cr / Math.sqrt(ea * eb + 1e-12)
+    if (score > best) {
+      best = score
+      lag = L
+    }
+  }
+  return lag
+}
+
+// FFT one symbol's window and undo the deterministic CP-backoff phase ramp (see
+// the demod for why the window is read from mid-CP), leaving channel + residual
+// timing on each subcarrier.
+function symbolSpectrum(pcm: Float32Array, off: number, cfg: OfdmConfig, N: number, derotC: Float64Array, derotS: Float64Array): { re: Float64Array, im: Float64Array } {
+  const re = new Float64Array(N)
+  const im = new Float64Array(N)
+  for (let i = 0; i < N; i++)
+    re[i] = pcm[off + i] ?? 0
+  fft(re, im)
+  for (let b = cfg.binLow; b <= cfg.binHigh; b++) {
+    const nr = re[b]! * derotC[b]! - im[b]! * derotS[b]!
+    const ni = re[b]! * derotS[b]! + im[b]! * derotC[b]!
+    re[b] = nr
+    im[b] = ni
+  }
+  return { re, im }
+}
+
+// The average phase step between adjacent pilots — pilots carry a known value of
+// 1, so this IS the linear phase ramp across frequency left by a residual
+// symbol-timing offset. Returns the per-bin phase step.
+function pilotSlope(re: Float64Array, im: Float64Array, pilots: number[], pilotSpacing: number): number {
+  let aR = 0
+  let aI = 0
+  for (let i = 0; i + 1 < pilots.length; i++) {
+    const p = pilots[i]!
+    const q = pilots[i + 1]!
+    aR += re[p]! * re[q]! + im[p]! * im[q]!
+    aI += re[p]! * im[q]! - im[p]! * re[q]!
+  }
+  return Math.atan2(aI, aR) / pilotSpacing
+}
+
+// Estimate the sampling-frequency offset (the two devices' clocks running at
+// slightly different rates) as the SLOPE of the per-symbol pilot timing across
+// the frame. A single per-symbol phase ramp removes a *static* timing error; the
+// drift and inter-carrier smear from a clock mismatch need the whole payload
+// resampled onto the corrected grid. Robust/MFSK ignores this; coherent OFDM
+// cannot — it's why Fast works in a single-clock sim but fails between two
+// real devices. Returns the fractional offset (samples of drift per sample).
+function estimateSfo(pcm: Float32Array, lag: number, numSyms: number, cfg: OfdmConfig, N: number, symLen: number, fftStart: number, derotC: Float64Array, derotS: Float64Array, pilots: number[]): number {
+  const period = N / cfg.pilotSpacing // the pilot-timing estimate wraps with this period (samples)
+  const tau = new Float64Array(numSyms)
+  for (let s = 0; s < numSyms; s++) {
+    const { re, im } = symbolSpectrum(pcm, lag + s * symLen + fftStart, cfg, N, derotC, derotS)
+    tau[s] = (pilotSlope(re, im, pilots, cfg.pilotSpacing) * N) / (2 * Math.PI)
+  }
+  // Unwrap the per-symbol timing, then least-squares-fit its drift-per-symbol.
+  for (let s = 1; s < numSyms; s++) {
+    let d = tau[s]! - tau[s - 1]!
+    while (d > period / 2) d -= period
+    while (d < -period / 2) d += period
+    tau[s] = tau[s - 1]! + d
+  }
+  let sx = 0
+  let sy = 0
+  let sxx = 0
+  let sxy = 0
+  for (let s = 0; s < numSyms; s++) {
+    sx += s
+    sy += tau[s]!
+    sxx += s * s
+    sxy += s * tau[s]!
+  }
+  const denom = numSyms * sxx - sx * sx
+  if (Math.abs(denom) < 1e-9)
+    return 0
+  return (numSyms * sxy - sx * sy) / denom / symLen
+}
+
 /** Demodulate OFDM PCM back to bytes, equalizing per-subcarrier from pilots. */
 export function demodulateOfdm(pcm: Float32Array, byteLength: number | undefined, cfg: OfdmConfig): Uint8Array {
   const { data: dataBins, pilots } = layout(cfg)
@@ -225,50 +329,12 @@ export function demodulateOfdm(pcm: Float32Array, byteLength: number | undefined
     ? Math.floor(pcm.length / symLen)
     : Math.max(1, Math.ceil((byteLength * 8) / bitsPerSym))
 
-  // Cyclic-prefix timing sync: the CP is a copy of each symbol's tail, so the
-  // start lag that best correlates CP↔tail (summed over symbols) is the true
-  // symbol boundary. The caller hands us a region with lead margin so this can
-  // search; it locks the FFT window to the symbols despite channel group delay
-  // and chirp-sync slack — the one thing coherent OFDM cannot otherwise tolerate.
-  const slack = Math.max(0, pcm.length - numSyms * symLen)
-  let lag = 0
-  if (slack > 0) {
-    const maxLag = Math.min(slack, 2 * cfg.cpSize)
-    let best = -Infinity
-    for (let L = 0; L <= maxLag; L++) {
-      let cr = 0
-      let ea = 0
-      let eb = 0
-      for (let s = 0; s < numSyms; s++) {
-        const p = L + s * symLen
-        for (let i = 0; i < cfg.cpSize; i++) {
-          const a = pcm[p + i] ?? 0
-          const b = pcm[p + N + i] ?? 0
-          cr += a * b
-          ea += a * a
-          eb += b * b
-        }
-      }
-      const score = cr / Math.sqrt(ea * eb + 1e-12)
-      if (score > best) {
-        best = score
-        lag = L
-      }
-    }
-  }
-
-  const table = interpTable(dataBins, pilots)
-  const writer = new BitWriter()
-
-  const hr = new Float64Array(N)
-  const hi = new Float64Array(N)
-
   // Read the FFT window from the MIDDLE of the cyclic prefix, not its end, so a
   // few samples of late timing error (channel group delay, chirp-detection
   // granularity, resampling) don't push the window into the next symbol → ISI.
   // Reading `shift` samples early circularly rotates each subcarrier by a known
-  // linear phase; we de-rotate it below (it wraps faster than the pilot spacing,
-  // so leaving it in would wreck the channel interpolation).
+  // linear phase; symbolSpectrum() de-rotates it (it wraps faster than the pilot
+  // spacing, so leaving it in would wreck the channel interpolation).
   const fftStart = cfg.cpSize >> 1
   const shift = cfg.cpSize - fftStart
   const derotC = new Float64Array(N)
@@ -279,37 +345,34 @@ export function demodulateOfdm(pcm: Float32Array, byteLength: number | undefined
     derotS[b] = Math.sin(ph)
   }
 
+  let lag = cpTimingSync(pcm, numSyms, symLen, N, cfg.cpSize)
+
+  // Correct a device-to-device sample-clock offset (SFO) before equalizing: with
+  // enough symbols to see the trend, resample the whole payload onto the
+  // corrected grid and re-sync. Without this, coherent OFDM survives a
+  // single-clock simulation but falls apart between two real devices (see
+  // estimateSfo). The bounds skip a negligible offset and refuse an implausible
+  // one (a mis-estimate that would only make things worse).
+  if (byteLength !== undefined && numSyms >= 4) {
+    const sfo = estimateSfo(pcm, lag, numSyms, cfg, N, symLen, fftStart, derotC, derotS, pilots)
+    if (Number.isFinite(sfo) && Math.abs(sfo) > 2e-5 && Math.abs(sfo) < 0.03) {
+      pcm = resample(pcm, cfg.sampleRate, cfg.sampleRate * (1 + sfo))
+      lag = cpTimingSync(pcm, numSyms, symLen, N, cfg.cpSize)
+    }
+  }
+
+  const table = interpTable(dataBins, pilots)
+  const writer = new BitWriter()
+  const hr = new Float64Array(N)
+  const hi = new Float64Array(N)
+
   for (let s = 0; s < numSyms; s++) {
-    const off = lag + s * symLen + fftStart
-    const re = new Float64Array(N)
-    const im = new Float64Array(N)
-    for (let i = 0; i < N; i++)
-      re[i] = pcm[off + i] ?? 0
-    fft(re, im)
+    const { re, im } = symbolSpectrum(pcm, lag + s * symLen + fftStart, cfg, N, derotC, derotS)
 
-    // Undo the deterministic CP-backoff phase ramp, leaving only the channel.
-    for (let b = cfg.binLow; b <= cfg.binHigh; b++) {
-      const nr = re[b]! * derotC[b]! - im[b]! * derotS[b]!
-      const ni = re[b]! * derotS[b]! + im[b]! * derotC[b]!
-      re[b] = nr
-      im[b] = ni
-    }
-
-    // Estimate the residual symbol-timing offset from the pilot phase slope — a
-    // timing error is a linear phase ramp across frequency, and pilots carry a
-    // known value (1), so the average phase step between adjacent pilots IS that
-    // ramp. Nulling it makes the demod tolerant of the real timing error left by
-    // channel group delay and chirp-sync granularity (without this, OFDM decodes
-    // only with sample-perfect timing — fine in tests, hopeless over the air).
-    let aR = 0
-    let aI = 0
-    for (let i = 0; i + 1 < pilots.length; i++) {
-      const p = pilots[i]!
-      const q = pilots[i + 1]!
-      aR += re[p]! * re[q]! + im[p]! * im[q]!
-      aI += re[p]! * im[q]! - im[p]! * re[q]!
-    }
-    const perBin = Math.atan2(aI, aR) / cfg.pilotSpacing
+    // Null the residual per-symbol timing offset (a linear phase ramp across
+    // frequency): pilots carry a known value, so the average pilot step IS that
+    // ramp. Without this, OFDM decodes only with sample-perfect timing.
+    const perBin = pilotSlope(re, im, pilots, cfg.pilotSpacing)
     for (let b = cfg.binLow; b <= cfg.binHigh; b++) {
       const ph = -perBin * b
       const c = Math.cos(ph)
@@ -320,17 +383,16 @@ export function demodulateOfdm(pcm: Float32Array, byteLength: number | undefined
       im[b] = ni
     }
 
-    // Channel estimate at pilots (pilot value is 1 → H = received).
+    // Channel estimate at pilots (pilot value is 1 → H = received), interpolated
+    // across the data subcarriers, then Y = received / H (complex division).
     for (const p of pilots) {
       hr[p] = re[p]!
       hi[p] = im[p]!
     }
-
     for (const { d, p1, p2, w } of table) {
       const Hr = hr[p1]! + (hr[p2]! - hr[p1]!) * w
       const Hi = hi[p1]! + (hi[p2]! - hi[p1]!) * w
       const denom = Hr * Hr + Hi * Hi || 1e-12
-      // Y = received[d] / H  (complex division)
       const yr = (re[d]! * Hr + im[d]! * Hi) / denom
       const yi = (im[d]! * Hr - re[d]! * Hi) / denom
       writer.write(pamDemap(yr * norm, m), m)
