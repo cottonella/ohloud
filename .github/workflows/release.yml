@@ -136,6 +136,7 @@ jobs:
         shell: bash
         run: |
           ver="${GITHUB_REF_NAME#v}"
+          ver="${ver//\//-}" # rehearsals dispatch from branches whose names may carry slashes (dependabot/…)
           mkdir -p staging
           file=$(ls ${{ matrix.glob }} | head -n1)
           dest="staging/ohloud-${ver}-${{ matrix.platform }}.${{ matrix.ext }}"
