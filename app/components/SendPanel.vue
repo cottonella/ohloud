@@ -10,6 +10,9 @@ const sound = useXylophone()
 const mode = ref<'text' | 'file'>('text')
 const speed = ref<'robust' | 'fast'>('robust')
 const text = ref('')
+// The secret is masked by default (like a password) so it can't be read over
+// the sender's shoulder; the eye button reveals it to check what was typed.
+const showText = ref(false)
 const file = ref<File | null>(null)
 const dragOver = ref(false)
 
@@ -269,12 +272,28 @@ onBeforeUnmount(() => {
         ]"
       />
 
-      <textarea
-        v-if="mode === 'text'"
-        v-model="text"
-        class="textarea textarea-bordered h-36 w-full text-base"
-        placeholder="Type a secret message, a password, anything…"
-      />
+      <div v-if="mode === 'text'" class="secret-box">
+        <textarea
+          v-model="text"
+          class="textarea textarea-bordered h-36 w-full text-base"
+          :class="{ masked: !showText }"
+          placeholder="Type a secret message, a password, anything…"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button
+          type="button"
+          class="secret-toggle"
+          :aria-pressed="showText"
+          :aria-label="showText ? 'Hide secret' : 'Show secret'"
+          :title="showText ? 'Hide' : 'Show'"
+          @click="showText = !showText"
+        >
+          <AppIcon :name="showText ? 'eye-off' : 'eye'" :size="18" />
+        </button>
+      </div>
 
       <label
         v-else
@@ -446,6 +465,42 @@ onBeforeUnmount(() => {
   border-color: var(--color-primary);
   background: oklch(97% 0.04 60);
   transform: translateY(-2px);
+}
+
+.secret-box {
+  position: relative;
+}
+/* Leave room for the reveal button so long lines don't slide under it. */
+.secret-box .textarea {
+  padding-right: 2.75rem;
+}
+/* Mask the composed secret like a password field. `-webkit-text-security`
+   covers every browser this app targets (iOS Safari, Chrome/Edge, desktop
+   Safari); the value still lives only in memory — this is anti-shoulder-surf. */
+.textarea.masked {
+  -webkit-text-security: disc;
+}
+.secret-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.55rem;
+  color: var(--color-base-content);
+  opacity: 0.5;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+.secret-toggle:hover {
+  opacity: 0.9;
+  background: var(--color-base-200);
+}
+.secret-toggle:active {
+  transform: scale(0.92);
 }
 
 /* Speed tabs: a single pill slides + resizes under the active tab, whose name

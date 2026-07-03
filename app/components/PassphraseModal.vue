@@ -83,6 +83,9 @@ function submit() {
                 class="grow"
                 placeholder="password"
                 autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
               >
               <button type="button" class="btn btn-ghost btn-xs" :aria-label="show ? 'Hide password' : 'Show password'" @click="show = !show">
                 <AppIcon :name="show ? 'eye-off' : 'eye'" :size="17" />
@@ -104,6 +107,9 @@ function submit() {
                 class="grow"
                 placeholder="confirm password"
                 autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
               >
             </label>
             <p v-if="mismatch" class="text-error text-xs">
