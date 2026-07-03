@@ -71,16 +71,21 @@ function registerTrpc() {
   })
 }
 
-// The Receive tab needs the microphone. Electron denies media permission by
-// default, so grant it here (deny everything else). The OS-level gate still
-// applies — macOS reads `NSMicrophoneUsageDescription` from Info.plist
-// (electron-builder `mac.extendInfo`) and shows its own consent prompt.
-function registerMediaPermissions() {
-  const isMedia = (permission: string): boolean => permission === 'media'
+// Grant exactly the two permissions the app uses and deny everything else:
+//  - `media`: the microphone for the Receive tab.
+//  - `clipboard-sanitized-write`: the "copy received text" button. Electron
+//    routes the web Clipboard API through this check, so without it
+//    `navigator.clipboard.writeText` is denied and fails silently on the desktop
+//    build (browsers default-allow it, which is why it only breaks in Electron).
+// Clipboard *read* stays denied — the app never reads the clipboard.
+// The OS-level mic gate still applies — macOS reads `NSMicrophoneUsageDescription`
+// from Info.plist (electron-builder `mac.extendInfo`) and shows its own prompt.
+function registerPermissions() {
+  const allowed = new Set(['media', 'clipboard-sanitized-write'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    callback(isMedia(permission))
+    callback(allowed.has(permission))
   })
-  session.defaultSession.setPermissionCheckHandler((_wc, permission) => isMedia(permission))
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => allowed.has(permission))
 }
 
 // Only hand real web/mail links to the OS browser — never file://, custom
@@ -188,7 +193,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   registerTrpc()
-  registerMediaPermissions()
+  registerPermissions()
   if (!isDev)
     registerAppProtocol()
   createWindow()
