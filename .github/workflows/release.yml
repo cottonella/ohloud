@@ -47,8 +47,11 @@ jobs:
   pages:
     needs: verify
     runs-on: ubuntu-latest
+    # Rehearsals bind a throwaway 'rehearsal' environment, so github-pages can
+    # keep a strict branch policy (dependabot/* stays locked out) while the
+    # build still runs — the deploy step is event-gated off in rehearsals anyway.
     environment:
-      name: github-pages
+      name: ${{ github.event_name == 'workflow_dispatch' && 'rehearsal' || 'github-pages' }}
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
