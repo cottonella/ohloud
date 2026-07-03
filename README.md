@@ -169,12 +169,22 @@ Targets are `zip` (Windows/macOS) and `AppImage` (Linux) in `package.json` →
 a folder. Nothing phones home; once loaded it runs entirely on-device (and fully
 offline after it's installed).
 
-**With Docker** — build the site and serve it with nginx:
+**With Docker (published image — no clone needed):**
+
+```bash
+docker run --rm -p 8080:80 ghcr.io/cottonella/ohloud
+# → http://localhost:8080
+```
+
+The image is multi-arch (`amd64` + `arm64`, so it runs on a Pi) and rebuilt on
+every release; pin a version with `ghcr.io/cottonella/ohloud:0.3.30` if you'd
+rather not track `latest`.
+
+Or **build it yourself** from a clone:
 
 ```bash
 docker build -t ohloud .
 docker run --rm -p 8080:80 ohloud
-# → http://localhost:8080
 ```
 
 **Without Docker** — put the generated files on any static host:
