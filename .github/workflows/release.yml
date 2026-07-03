@@ -92,6 +92,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: .output/public
+          # v4 started silently dropping dotfiles from the artifact. Keep them:
+          # .nojekyll above, and any future .well-known/ (security.txt etc.).
+          include-hidden-files: true
       - id: deploy
         if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal builds, never deploys
         uses: actions/deploy-pages@v5
