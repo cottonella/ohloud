@@ -1,12 +1,19 @@
 # Weekly dependency watch across all three ecosystems the repo actually uses.
 # Minor/patch npm bumps arrive grouped as one PR to keep the noise down;
 # majors (and anything security-flagged) still get their own.
+#
+# The cooldowns let a fresh release age before a PR is opened — most hijacked
+# package versions are yanked within days, so the ecosystem canaries sing
+# first. Security-advisory fixes bypass the cooldown and arrive immediately.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -17,8 +24,13 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7

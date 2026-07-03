@@ -1,0 +1,36 @@
+name: CI
+
+# Lint + tests + a full static-site build on every PR and push to main. This is
+# what turns a Dependabot bump into a self-verifying PR: same-repo PRs run THIS
+# file as modified by the PR, so a bumped checkout/setup-node proves itself in
+# the very run that gates its merge.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # ships npm 11 — must match the lockfile toolchain
+          cache: npm
+      - name: Install (skip Electron binary — nothing is packaged here)
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+      - run: npm run lint
+      - run: npm test
+      - name: Build the static site
+        run: npm run generate

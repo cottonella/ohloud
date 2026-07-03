@@ -1,11 +1,15 @@
 name: Release
 
-# Runs only when a version tag (v*) is pushed. A guard job additionally refuses to
-# deploy unless the tagged commit is on main.
+# Runs when a version tag (v*) is pushed. A guard job additionally refuses to
+# deploy unless the tagged commit is on main. Manually dispatching it instead
+# (Actions → Release → Run workflow) is a REHEARSAL: every job builds with the
+# current action versions, but nothing is deployed, pushed, or published —
+# handy for proving a Dependabot action bump before spending a version tag.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write # create the GitHub Release
@@ -27,6 +31,10 @@ jobs:
           fetch-depth: 0
       - name: Ensure the tag is on main
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Rehearsal run — no tag to verify."
+            exit 0
+          fi
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           if git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
             echo "OK: $GITHUB_REF_NAME is on main."
@@ -82,6 +90,7 @@ jobs:
         with:
           path: .output/public
       - id: deploy
+        if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal builds, never deploys
         uses: actions/deploy-pages@v5
 
   # ── Desktop apps: one artifact per OS, renamed to ohloud-<version>-<platform> ──
@@ -170,7 +179,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal builds, never pushes
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -196,6 +205,7 @@ jobs:
           sha256sum ohloud-* > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal stops short of a Release
         with:
           generate_release_notes: true
           fail_on_unmatched_files: true
