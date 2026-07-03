@@ -1,0 +1,34 @@
+name: Docker
+
+# Build-only check of the container image, path-filtered so ordinary PRs pay
+# nothing — it runs solely when the Docker bits change (the gap that let a
+# Dockerfile-only PR sail through with zero checks). amd64 only: fast native
+# proof that the image builds; the multi-arch build + push stay release-only.
+on:
+  pull_request:
+    branches: [main]
+    paths: [Dockerfile, 'docker/**', .dockerignore]
+  push:
+    branches: [main]
+    paths: [Dockerfile, 'docker/**', .dockerignore]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the image (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
