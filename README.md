@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/cottonella/ohloud/releases"><img alt="latest version" src="https://img.shields.io/github/v/tag/cottonella/ohloud?style=flat&label=version&color=fce6d3&labelColor=f4eee2" /></a>
+  <a href="https://github.com/cottonella/ohloud/pkgs/container/ohloud"><img alt="container image on GHCR" src="https://img.shields.io/badge/ghcr.io-cottonella%2Fohloud-d5e5f8?style=flat&logo=docker&logoColor=5b8fc9&labelColor=f4eee2" /></a>
 </p>
 
 Type a message or drop a small file, choose a password, and *ohloud* sings it
@@ -39,9 +40,9 @@ The same cuddly app, in whichever shape suits you:
 - **💻 Desktop app** — an Electron build for Windows, macOS and Linux, ready
   to download from the
   [releases page](https://github.com/cottonella/ohloud/releases).
-- **🏡 Self-hosted** — *ohloud* is a static site with no backend: serve it with
-  Docker or drop the generated folder on any static host (see
-  [Self-host](#self-host)).
+- **🏡 Self-hosted** — *ohloud* is a static site with no backend. Run the
+  prebuilt container (`docker run ghcr.io/cottonella/ohloud`) or drop the
+  generated folder on any static host (see [Self-host](#self-host)).
 
 ## How to use
 
@@ -177,8 +178,7 @@ docker run --rm -p 8080:80 ghcr.io/cottonella/ohloud
 ```
 
 The image is multi-arch (`amd64` + `arm64`, so it runs on a Pi) and rebuilt on
-every release; pin a version with `ghcr.io/cottonella/ohloud:0.3.30` if you'd
-rather not track `latest`.
+every release.
 
 Or **build it yourself** from a clone:
 
