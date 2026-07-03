@@ -88,7 +88,7 @@ function mountainTile(fill: string, cap: string, seed: number, peaks: number, ma
   // so a peak's neighbours are its left and right valleys.
   let caps = ''
   for (let j = 1; j < ridge.length; j += 2) {
-    const a = ridge[j]
+    const a = ridge[j]!
     if (a.ph <= 0.66)
       continue
     const lft = ridge[j - 1]!

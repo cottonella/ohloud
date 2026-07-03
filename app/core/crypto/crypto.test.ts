@@ -77,7 +77,7 @@ describe('authenticated encryption', () => {
     const nonce = randomBytes(24)
     const aad = utf8ToBytes('h')
     const ct = aeadSeal(key, nonce, aad, utf8ToBytes('hello'))
-    ct[0] ^= 0x01
+    ct[0] = ct[0]! ^ 0x01
     expect(() => aeadOpen(key, nonce, aad, ct)).toThrow()
   })
 })

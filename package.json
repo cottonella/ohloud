@@ -16,6 +16,7 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "bench": "tsx bench/run.ts"
   },
@@ -43,6 +44,7 @@
     "tsx": "^4.22.5",
     "vitest": "^4.1.9",
     "vue": "latest",
+    "vue-tsc": "^3.3.6",
     "wait-on": "9.0.10",
     "zod": "4.4.3"
   },

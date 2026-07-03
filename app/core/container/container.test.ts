@@ -77,19 +77,19 @@ describe('failure modes are distinguishable', () => {
 
   it('tampered ciphertext → CorruptedError', () => {
     const container = sealText('secret', PW, { kdf: FAST })
-    container[container.length - 1] ^= 0x01
+    container[container.length - 1] = container[container.length - 1]! ^ 0x01
     expect(() => open(container, PW)).toThrow(CorruptedError)
   })
 
   it('tampered header flags (AAD) → CorruptedError', () => {
     const container = sealText('secret', PW, { kdf: FAST })
-    container[9] ^= 0xFF // flags byte is AAD-bound but not a KDF input
+    container[9] = container[9]! ^ 0xFF // flags byte is AAD-bound but not a KDF input
     expect(() => open(container, PW)).toThrow(CorruptedError)
   })
 
   it('tampered salt → WrongPassphraseError (commitment mismatch)', () => {
     const container = sealText('secret', PW, { kdf: FAST })
-    container[10] ^= 0x01 // salt byte → different master key → commitment fails
+    container[10] = container[10]! ^ 0x01 // salt byte → different master key → commitment fails
     expect(() => open(container, PW)).toThrow(WrongPassphraseError)
   })
 })

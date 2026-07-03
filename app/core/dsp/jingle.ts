@@ -58,7 +58,7 @@ export function synthXylophoneJingle(sampleRate: number, amp = 0.5): Float32Arra
           if (pf < nyquist)
             s += a * Math.sin(2 * Math.PI * pf * t)
         }
-        out[start + i] += amp * env * s
+        out[start + i] = out[start + i]! + amp * env * s
       }
     }
     onset += step

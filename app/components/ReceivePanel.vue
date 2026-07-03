@@ -213,7 +213,9 @@ const safeFilename = computed(() => (result.value ? sanitizeFilename(result.valu
 function downloadFile() {
   if (!result.value || result.value.isText)
     return
-  const url = URL.createObjectURL(new Blob([result.value.content]))
+  // .slice() re-homes the bytes onto a plain ArrayBuffer — BlobPart rejects
+  // views typed over ArrayBufferLike (they could wrap a SharedArrayBuffer).
+  const url = URL.createObjectURL(new Blob([result.value.content.slice()]))
   const a = document.createElement('a')
   a.href = url
   a.download = safeFilename.value

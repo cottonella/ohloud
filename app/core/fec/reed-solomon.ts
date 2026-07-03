@@ -188,7 +188,9 @@ export function rsDecode(codeword: Uint8Array, nsym: number, erasePos: number[] 
   if (erasePos.length > nsym)
     throw new ReedSolomonError('too many erasures to correct')
 
-  let msg = codeword.slice()
+  // Annotated: .slice() infers Uint8Array<ArrayBuffer>, but correctErrata
+  // returns the plain (ArrayBufferLike) flavor — the wider type fits both.
+  let msg: Uint8Array = codeword.slice()
   for (const p of erasePos)
     msg[p] = 0
 
