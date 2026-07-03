@@ -35,8 +35,13 @@ let retryAudio: (() => void) | null = null
 
 const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 : file.value !== null))
 
+// A quiet 500 ms cushion on each side of the transmission: the startup jingle
+// can't bleed into the payload, and the completion blip can't bleed into a
+// receiver that's still capturing. Belt-and-suspenders on top of the FEC.
+const SETTLE_SEC = 0.5
+
 const estimate = computed(() => {
-  const j = jingleDurationSec()
+  const j = jingleDurationSec() + SETTLE_SEC
   if (mode.value === 'text') {
     const bytes = new TextEncoder().encode(text.value).length
     return estimateDurationSec(bytes, 17, 48000, speed.value, 0.25) + j
@@ -138,11 +143,13 @@ async function start() {
       ? await codec.encodeText(text.value, pendingPass.value, output.sampleRate, speed.value)
       : await codec.encodeFile(file.value!.name, new Uint8Array(await file.value!.arrayBuffer()), pendingPass.value, output.sampleRate, speed.value)
 
-    // Lead with a cute glockenspiel jingle; the receiver's chirp search scans past it.
+    // Lead with a cute glockenspiel jingle, then a quiet cushion so it can't
+    // bleed into the payload; the receiver's chirp search scans past both.
     const jingle = synthXylophoneJingle(output.sampleRate)
-    const pcm = new Float32Array(jingle.length + reply.pcm.length)
+    const settle = Math.round(SETTLE_SEC * output.sampleRate)
+    const pcm = new Float32Array(jingle.length + settle + reply.pcm.length)
     pcm.set(jingle, 0)
-    pcm.set(reply.pcm, jingle.length)
+    pcm.set(reply.pcm, jingle.length + settle)
 
     durationSec.value = pcm.length / output.sampleRate
     stage.value = 'playing'
@@ -155,7 +162,9 @@ async function start() {
     else {
       progress.value = 1
       stage.value = 'done'
-      sound.success()
+      // Give the receiver a quiet beat to finish capturing before the blip —
+      // otherwise it could bleed into a mic that's still listening.
+      setTimeout(() => sound.success(), SETTLE_SEC * 1000)
     }
   }
   catch (e) {
