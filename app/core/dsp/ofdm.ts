@@ -43,7 +43,7 @@ export function ofdmConfig(constellation: Constellation): OfdmConfig {
     cpSize: 256,
     binLow: Math.round((1500 * fftSize) / OFDM_RATE), // 32
     binHigh: Math.round((6500 * fftSize) / OFDM_RATE), // 139
-    pilotSpacing: 8, // dense enough to equalize delay spread up to ~N/16 samples
+    pilotSpacing: 5, // tracks a room's reflection comb up to ~N/10 samples of delay
     constellation,
     amplitude: 0.7,
   }
