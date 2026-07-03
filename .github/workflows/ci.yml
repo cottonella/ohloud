@@ -1,9 +1,9 @@
 name: CI
 
-# Lint + tests + a full static-site build on every PR and push to main. This is
-# what turns a Dependabot bump into a self-verifying PR: same-repo PRs run THIS
-# file as modified by the PR, so a bumped checkout/setup-node proves itself in
-# the very run that gates its merge.
+# Lint + tests + the full build (static site AND the Electron main bundle) on
+# every PR and push to main. This is what turns a Dependabot bump into a
+# self-verifying PR: same-repo PRs run THIS file as modified by the PR, so a
+# bumped checkout/setup-node proves itself in the very run that gates its merge.
 on:
   pull_request:
     branches: [main]
@@ -32,5 +32,8 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
       - run: npm run lint
       - run: npm test
-      - name: Build the static site
-        run: npm run generate
+      # `build` = `generate` (the site) + the Electron main vite bundle, so a PR
+      # that breaks electron/ can't slip through to release time. Packaging with
+      # electron-builder (which is what needs the binary) stays release-only.
+      - name: Build the site + Electron main
+        run: npm run build
