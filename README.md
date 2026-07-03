@@ -85,21 +85,23 @@ supported as well, though transfer time grows with size, making it practical
 mainly for small ones. Two modes are available, and the app shows the estimated
 **transmission time** before you send:
 
-| Mode | Rate | Best for |
+| Mode | Effective rate | Best for |
 |---|---|---|
-| 🐢 **Robust** (MFSK) | ~42 B/s | noisy rooms, cross-device, any speaker |
-| 🐇 **Fast** (OFDM / QPSK) | ~0.7–1 KB/s | a quiet room with the devices close |
+| 🐢 **Robust** (MFSK) | ~50–70 B/s | noisy rooms, cross-device, any speaker |
+| 🐇 **Fast** (OFDM / QPSK) | ~0.3–0.45 KB/s | a quiet room with the devices close |
 
-Rough Robust transmission times:
+Rough end-to-end times (chime included), measured in the acoustic loopback
+bench and decoded through each mode's advertised room:
 
-| Payload | ≈ time |
-|---|---|
-| a password (~30 B) | a few seconds |
-| a short message (~1 KB) | ~30 s |
-| a small file (~10 KB) | ~4 min |
+| Payload | 🐢 Robust | 🐇 Fast |
+|---|---|---|
+| a password (~30 B) | ~7 s | ~3 s |
+| a short message (~1 KB) | ~21 s | ~5 s |
+| a small file (~10 KB) | ~2.5 min | ~25 s |
 
-Files carry ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB
-is impractical over sound (tens of minutes).
+Rates are all-inclusive — encryption, error correction, framing. Files carry
+~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB is
+impractical over sound (tens of minutes).
 
 ## Will it work on my devices?
 
@@ -209,6 +211,7 @@ the service worker fresh, and adds a few hardening headers (`X-Frame-Options`,
 
 ```bash
 npm test           # vitest — the app/core engine + property/loopback tests
+npm run typecheck  # vue-tsc type-checks the whole app
 npm run bench      # pure-JS acoustic channel calibration (no hardware)
 npm run lint       # eslint . (add --fix)
 ```
