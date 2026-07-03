@@ -89,7 +89,7 @@ jobs:
               echo "Deleting stale github-pages artifact $id"
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
             done
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: .output/public
       - id: deploy
