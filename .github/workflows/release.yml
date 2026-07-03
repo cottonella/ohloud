@@ -62,7 +62,7 @@ jobs:
             echo "${{ vars.SITE_DOMAIN }}" > .output/public/CNAME
             echo "CNAME set to ${{ vars.SITE_DOMAIN }}"
           fi
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       # A re-run leaves the previous attempt's immutable `github-pages` artifact
       # in place; uploading a second makes deploy-pages choke on "Multiple
       # artifacts named github-pages". Prune any leftovers before we upload —
