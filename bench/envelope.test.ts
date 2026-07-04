@@ -14,13 +14,13 @@ import { randomBytes } from './modem'
 //   robust:               noise cliff ≤ 0 dB SNR (§16 calibration) — pinned at 6 dB
 //   fast  (classic+RQ25): noise cliff 8 dB @ reverb 0.25 (the v1 envelope,
 //                         improved by TX PAPR limiting) — pinned at 10 dB
-//   turbo (wide 16-QAM):  echo-bound: reverb ≤ 0.15; noise cliff ~20 dB there
-//                         after PAPR limiting — pinned at 24 dB @ reverb 0.15
-//                         (1 KB) with a 30 B pin at 28 dB, plus clip- and
-//                         rolloff-proof pins in its habitat. Consciously
-//                         re-pinned from wide-QPSK (20 dB @ 0.25) when Turbo
-//                         moved to 16-QAM — user sign-off, 2026-07-03.
-//   fast rolloff:         speaker-rolloff cliff ≤ 6 kHz — pinned at 8 kHz
+//   turbo (wide QPSK+RQ10): noise cliff 12 dB @ reverb 0.25 after PAPR
+//                         limiting (was 18 dB in phase 1) — pinned at 14 dB
+//                         (1 KB) with a 30 B pin at 16 dB, plus clip- and
+//                         rolloff pins. 16-QAM Turbo was tried and rolled
+//                         back 2026-07-03: it passed the bench but failed on
+//                         real devices — see MODE_OFDM_QAM16_WIDE's note.
+//   both OFDM rolloff:    speaker-rolloff cliff ≤ 6 kHz — pinned at 8 kHz
 //
 // If a change makes one of these fail, the envelope shrank: fix the change or
 // consciously re-measure and re-pin with the user's sign-off.
@@ -54,21 +54,21 @@ describe('survival envelope pins', () => {
     expect(survives('fast', { snrDb: 22, reverb: 0.2, bandLow: 300, bandHigh: 8000 }, 77)).toBe(true)
   }, 20_000)
 
-  it('turbo holds its 16-QAM envelope: 24 dB SNR @ reverb 0.15', () => {
-    expect(survives('turbo', { snrDb: 24, reverb: 0.15, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000 }, 75, 1000)).toBe(true)
-    expect(survives('turbo', { snrDb: 24, reverb: 0.15, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000 }, 76, 1000)).toBe(true)
+  it('turbo holds its wide-QPSK envelope: 14 dB SNR @ reverb 0.25', () => {
+    expect(survives('turbo', { snrDb: 14, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }, 75, 1000)).toBe(true)
+    expect(survives('turbo', { snrDb: 14, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }, 76, 1000)).toBe(true)
   }, 20_000)
 
-  it('turbo carries a tiny secret (30 B) in its habitat', () => {
-    expect(survives('turbo', { snrDb: 28, reverb: 0.15, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000 }, 81, 30)).toBe(true)
-    expect(survives('turbo', { snrDb: 28, reverb: 0.15, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000 }, 82, 30)).toBe(true)
+  it('turbo carries a tiny secret (30 B) with margin', () => {
+    expect(survives('turbo', { snrDb: 16, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }, 81, 30)).toBe(true)
+    expect(survives('turbo', { snrDb: 16, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }, 82, 30)).toBe(true)
   }, 20_000)
 
-  it('turbo survives hard clipping (AGC) in its habitat', () => {
+  it('turbo survives hard clipping (AGC)', () => {
     expect(survives('turbo', { snrDb: 30, reverb: 0.15, reverbDecaySec: 0.3, bandLow: 200, bandHigh: 15000, clip: 0.6 }, 78, 1000)).toBe(true)
   }, 20_000)
 
-  it('turbo tolerates an 8 kHz speaker rolloff in its habitat', () => {
-    expect(survives('turbo', { snrDb: 30, reverb: 0.15, bandLow: 300, bandHigh: 8000 }, 79, 1000)).toBe(true)
+  it('turbo tolerates an 8 kHz speaker rolloff', () => {
+    expect(survives('turbo', { snrDb: 22, reverb: 0.2, bandLow: 300, bandHigh: 8000 }, 79, 1000)).toBe(true)
   }, 20_000)
 })

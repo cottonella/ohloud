@@ -17,15 +17,18 @@ export const MODE_OFDM_QPSK = 0x01
 export const MODE_OFDM_QAM16 = 0x02
 export const MODE_OFDM_QAM64 = 0x03
 /**
- * QPSK over the wide 10 kHz lane. No tier sends it since Turbo moved to
- * 16-QAM, but receivers keep decoding it — it's the middle gear a phase-3
- * channel probe will want to pick automatically.
+ * QPSK over the wide 10 kHz lane — the Turbo tier. Old receivers see an
+ * unknown mode and reject cleanly; new receivers decode every lane.
  */
 export const MODE_OFDM_QPSK_WIDE = 0x04
 /**
- * 16-QAM over the wide 10 kHz lane — the Turbo tier: ~2× the wide-QPSK rate,
- * strictly a quiet-room modulation (amplitude decisions don't survive real
- * reverb). Old receivers see an unknown mode and reject cleanly.
+ * 16-QAM over the wide 10 kHz lane — SHELVED, receivable but unsent. It is
+ * ~2× the wide-QPSK rate and passes the bench, yet has failed every
+ * real-world attempt (2026-07 and earlier main-branch experiments): real
+ * audio chains mangle amplitude (speaker limiters, OS loudness DSP, driver
+ * AGC) in ways the simulator doesn't model, and 16-QAM is the only mode that
+ * stores data in amplitude. Do not re-enable without a real-device capture
+ * analysis proving the chain carries amplitudes — bench/analyze-capture.ts.
  */
 export const MODE_OFDM_QAM16_WIDE = 0x05
 export const FEC_RS = 0x00

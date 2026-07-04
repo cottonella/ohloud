@@ -15,38 +15,40 @@ import { sealFile, sealText } from './container/text'
 import { CorruptedError, UnsupportedError } from './errors'
 import { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
 import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, ofdmGuardSamples, parseFrame, payloadSamples } from './protocol/frame'
-import { encodeWireHeader, FEC_RS, FEC_RS_FOUNTAIN, MODE_MFSK, MODE_OFDM_QAM16_WIDE, MODE_OFDM_QPSK, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
+import { encodeWireHeader, FEC_RS, FEC_RS_FOUNTAIN, MODE_MFSK, MODE_OFDM_QPSK, MODE_OFDM_QPSK_WIDE, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
 
 /**
  * Robust MFSK (slow, very sturdy) · Fast OFDM on the classic 6.5 kHz lane
- * (much quicker, tolerates a fair bit of noise) · Turbo 16-QAM on the wide
- * 10 kHz lane (the speediest — strictly a quiet room with close devices).
+ * (much quicker, tolerates a fair bit of noise) · Turbo OFDM on the wide
+ * 10 kHz lane (the speediest — wants a quiet room and close devices).
  */
 export type TransmitMode = 'robust' | 'fast' | 'turbo'
 
 function modeByte(mode: TransmitMode): number {
-  // Fast keeps QPSK on the classic lane — its measured noise cliff (10 dB SNR
-  // @ reverb 0.25) is the v1 envelope, bit for bit. Turbo runs 16-QAM on the
-  // wide lane: the quiet-room specialist (amplitude decisions don't survive
-  // real reverb, so it hard-requires its advertised habitat — consciously
-  // re-pinned from wide-QPSK, user sign-off 2026-07-03). Wide QPSK (0x04)
-  // stays receivable as the middle gear for a future channel probe.
-  return mode === 'turbo' ? MODE_OFDM_QAM16_WIDE : mode === 'fast' ? MODE_OFDM_QPSK : MODE_MFSK
+  // QPSK everywhere — it encodes in PHASE only. 16-QAM (amplitude+phase) has
+  // now failed every real-world attempt (main-branch Fast experiments, and
+  // Turbo in 2026-07 phase 2) despite passing the bench: real audio chains
+  // time-warp amplitude in ways the simulator doesn't model — speaker
+  // protection limiters, OS loudness processing, driver-level mic AGC that
+  // getUserMedia constraints can't fully disable, and speaker THD at volume.
+  // Turbo therefore rides the wide lane on QPSK (0x04), the last config the
+  // user validated on real devices. 16-QAM wide (0x05) stays receivable but
+  // UNSENT until a real capture proves the chain can carry amplitudes — see
+  // bench/analyze-capture.ts.
+  return mode === 'turbo' ? MODE_OFDM_QPSK_WIDE : mode === 'fast' ? MODE_OFDM_QPSK : MODE_MFSK
 }
 
 /**
- * Per-mode FEC policy (bench envelope sweeps, 2026-07). Every tier keeps the
- * full RS64 + 25% fountain: Robust and Fast because their measured envelopes
- * are the product's promises, Turbo because 16-QAM demands it — trimming the
- * fountain to 10% measured flaky even inside its quiet habitat (2/5 at
- * reverb 0.15 where 25% is 5/5). Measured dead ends — do not retry: RS48
- * parity (tiny payloads fail: few blocks concentrate weak-bin errors), TX
- * pre-emphasis (drowned top bins aren't a tilt problem; the interleaver
- * spreads their damage to every block uniformly), and any lean fountain
- * under 16-QAM.
+ * Per-mode FEC policy (bench envelope sweeps, 2026-07). Robust and Fast keep
+ * the full v1 armor — their measured envelopes are the product's promises.
+ * Turbo (wide QPSK) trims the fountain to 10%: measured 20/20 at every size
+ * with full RS parity, and PAPR limiting has since widened its margins.
+ * Measured dead ends — do not retry: RS48 parity (tiny payloads fail: few
+ * blocks concentrate weak-bin errors) and TX pre-emphasis (drowned top bins
+ * aren't a tilt problem; the interleaver spreads their damage everywhere).
  */
 const FEC_NSYM_BY_MODE: Record<TransmitMode, number> = { robust: 64, fast: 64, turbo: 64 }
-const REPAIR_BY_MODE: Record<TransmitMode, number> = { robust: 0.25, fast: 0.25, turbo: 0.25 }
+const REPAIR_BY_MODE: Record<TransmitMode, number> = { robust: 0.25, fast: 0.25, turbo: 0.10 }
 
 export interface EncodeOptions {
   /** Argon2id parameters (forwarded to the container). */

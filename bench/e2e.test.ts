@@ -40,11 +40,14 @@ describe('end-to-end through the calibrated rooms', () => {
     expect(roundTrip('fast', 1000, NORMAL, 44)).toBe(true)
   }, 20_000)
 
-  // Turbo is 16-QAM: a quiet-room specialist by design. It has no normal-room
-  // spec on purpose — that habitat belongs to Fast (see the envelope pins).
-  it('turbo (16-QAM wide lane) survives the quiet room', () => {
+  it('turbo (wide QPSK lane) survives the quiet room', () => {
     expect(roundTrip('turbo', 1000, QUIET, 11)).toBe(true)
     expect(roundTrip('turbo', 1000, QUIET, 22)).toBe(true)
+  }, 20_000)
+
+  it('turbo (wide QPSK lane) survives the normal room', () => {
+    expect(roundTrip('turbo', 1000, NORMAL, 33)).toBe(true)
+    expect(roundTrip('turbo', 1000, NORMAL, 44)).toBe(true)
   }, 20_000)
 
   it('robust survives the noisy room', () => {
@@ -54,21 +57,21 @@ describe('end-to-end through the calibrated rooms', () => {
 })
 
 describe('wire compatibility', () => {
-  it('fast keeps the classic lane; turbo takes the wide 16-QAM lane', () => {
+  it('fast keeps the classic lane; turbo takes the wide QPSK lane', () => {
     const fast = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'fast', sampleRate: SR }).pcm, SR)
     expect(fast.header.mode).toBe(MODE_OFDM_QPSK)
     expect(fast.header.fecNsym).toBe(64)
     const turbo = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'turbo', sampleRate: SR }).pcm, SR)
-    expect(turbo.header.mode).toBe(MODE_OFDM_QAM16_WIDE)
+    expect(turbo.header.mode).toBe(MODE_OFDM_QPSK_WIDE)
     expect(turbo.header.fecNsym).toBe(64)
   }, 20_000)
 
-  // No tier sends these two lanes anymore, but deployed receivers must keep
-  // decoding them: 0x01 is what v1 senders emit, and 0x04 (wide QPSK) is the
-  // middle gear a phase-3 channel probe will hand out.
+  // Receivers must keep decoding lanes nobody currently sends: 0x01 is Fast's
+  // own lane (v1 compat), and 0x05 is the shelved 16-QAM wide lane — it stays
+  // receivable so re-enabling it someday needs no receiver update.
   it.each([
     ['classic 6.5 kHz QPSK (v1 senders)', MODE_OFDM_QPSK],
-    ['wide 10 kHz QPSK (phase-3 middle gear)', MODE_OFDM_QPSK_WIDE],
+    ['shelved wide 16-QAM', MODE_OFDM_QAM16_WIDE],
   ])('still decodes the %s lane', (_name, mode) => {
     const blob = randomBytes(400, 8)
     const { data, meta } = fecEncode(blob, { nsym: 64, repair: 0 })
