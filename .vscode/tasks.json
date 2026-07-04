@@ -3,8 +3,8 @@
   "tasks": [
     {
       // Starts `nuxt dev` and signals "ready" once the server is listening,
-      // so debug configs can wait for it via preLaunchTask.
-      "label": "nuxt:dev",
+      // so the Tauri/website debug configs can wait for it via preLaunchTask.
+      "label": "ui:dev",
       "type": "npm",
       "script": "dev",
       "isBackground": true,
@@ -20,17 +20,10 @@
       }
     },
     {
-      // One-shot dev build of the Electron main/preload (TypeScript -> dist).
-      "label": "electron:build:dev",
-      "type": "shell",
-      "command": "npx vite build --mode development --config electron/vite.config.ts",
-      "problemMatcher": []
-    },
-    {
-      // preLaunchTask for debugging: build electron + start the dev server.
-      "label": "debug:prepare",
-      "dependsOn": ["electron:build:dev", "nuxt:dev"],
-      "dependsOrder": "parallel",
+      // One-shot static build into .output/public (what the release build embeds).
+      "label": "ui:build",
+      "type": "npm",
+      "script": "generate",
       "problemMatcher": []
     }
   ]

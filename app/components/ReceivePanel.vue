@@ -210,12 +210,20 @@ function sanitizeFilename(raw: string): string {
 
 const safeFilename = computed(() => (result.value ? sanitizeFilename(result.value.filename) : ''))
 
-function downloadFile() {
+async function downloadFile() {
   if (!result.value || result.value.isText)
     return
+  const bytes = result.value.content
+  const { invoke, isTauri } = await import('@tauri-apps/api/core')
+  if (isTauri()) {
+    // Browser downloads do nothing in a Tauri webview — hand the bytes to the
+    // native save command, which prompts with the OS "Save As" dialog.
+    await invoke('save_file', { name: safeFilename.value, contents: Array.from(bytes) })
+    return
+  }
   // .slice() re-homes the bytes onto a plain ArrayBuffer — BlobPart rejects
   // views typed over ArrayBufferLike (they could wrap a SharedArrayBuffer).
-  const url = URL.createObjectURL(new Blob([result.value.content.slice()]))
+  const url = URL.createObjectURL(new Blob([bytes.slice()]))
   const a = document.createElement('a')
   a.href = url
   a.download = safeFilename.value

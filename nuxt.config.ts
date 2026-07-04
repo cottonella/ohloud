@@ -2,13 +2,17 @@
 import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 
-// Locked-down CSP for the BUILT app (web + Electron both serve this HTML).
-// Omitted in dev so Vite's HMR (which needs 'unsafe-eval' + a ws: connection)
-// keeps working. `'unsafe-inline'` on script is required by Nuxt's tiny inline
-// bootstrap — it carries a per-build buildId, so a static hash can't be pinned;
-// the app itself uses no eval, loads only same-origin assets, and runs its audio
-// worklet + codec worker from blob:. This blocks remote script/style/img/connect
-// (exfiltration + remote payloads) and object/base-tag hijacking.
+// Locked-down CSP for the BUILT app (the website and the Tauri desktop app both
+// serve this same HTML). Omitted in dev so Vite's HMR (which needs 'unsafe-eval'
+// + a ws: connection) keeps working. `'unsafe-inline'` on script is required by
+// Nuxt's tiny inline bootstrap — it carries a per-build buildId, so a static
+// hash can't be pinned; the app itself uses no eval, loads only same-origin
+// assets, and runs its audio worklet + codec worker from blob:. `connect-src`
+// also allows Tauri's `ipc:`/`http://ipc.localhost` so the desktop build's
+// `invoke()` bridge works (those sources are inert/unused on the web). This
+// still blocks remote script/style/img/connect (exfiltration + remote payloads)
+// and object/base-tag hijacking. Tauri injects no CSP of its own here
+// (`app.security.csp` is null), so this policy is the single source of truth.
 const CONTENT_SECURITY_POLICY = [
   `default-src 'self'`,
   `base-uri 'self'`,
@@ -19,7 +23,7 @@ const CONTENT_SECURITY_POLICY = [
   `style-src 'self' 'unsafe-inline'`,
   `script-src 'self' 'unsafe-inline' blob:`,
   `worker-src 'self' blob:`,
-  `connect-src 'self'`,
+  `connect-src 'self' ipc: http://ipc.localhost`,
   `manifest-src 'self'`,
 ].join('; ')
 
@@ -30,8 +34,8 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   // SPA mode: no Node server required at runtime, so the whole app runs
-  // purely locally — in the browser, or inside Electron via a custom
-  // protocol that serves the generated files in `.output/public`.
+  // purely locally — in the browser, or inside the Tauri desktop app, which
+  // serves the generated `.output/public` files from the app's own origin.
   ssr: false,
 
   modules: ['@vite-pwa/nuxt'],
@@ -56,7 +60,14 @@ export default defineNuxtConfig({
         '@noble/hashes/argon2.js',
         '@noble/hashes/hkdf.js',
         '@noble/hashes/sha2.js',
+        '@tauri-apps/api/core',
+        '@tauri-apps/plugin-opener',
+        '@trpc/client',
+        '@trpc/server',
+        '@trpc/server/adapters/fetch',
+        'canvas-confetti',
         'fflate',
+        'zod',
       ],
     },
   },

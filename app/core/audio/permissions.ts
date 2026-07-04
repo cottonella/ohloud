@@ -1,4 +1,4 @@
-// Microphone permission helpers. Browser/Electron only.
+// Microphone permission helpers. Browser/Tauri only.
 
 export type MicPermission = 'granted' | 'denied' | 'prompt' | 'unknown'
 

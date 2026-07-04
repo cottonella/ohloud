@@ -1,4 +1,4 @@
-// Microphone capture → streaming FrameReceiver. Browser/Electron only.
+// Microphone capture → streaming FrameReceiver. Browser/Tauri only.
 // Speech DSP (echo cancel / AGC / noise suppression) is disabled — it would
 // destroy the tones. Mic blocks are pulled via an inline AudioWorklet (defined
 // as a Blob so there's no separate file to bundle).

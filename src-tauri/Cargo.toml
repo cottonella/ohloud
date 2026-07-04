@@ -1,0 +1,30 @@
+[package]
+name = "ohloud"
+version = "0.1.0"
+description = "Send secrets by sound — offline, encrypted, no server, no pairing."
+authors = ["cottonella"]
+license = "AGPL-3.0-only"
+edition = "2021"
+
+# The library that the desktop binary (and any future mobile target) share, so
+# app logic lives in one place — see src/lib.rs. main.rs is a thin shim.
+[lib]
+name = "ohloud_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Linux only: drive wry's own WebKitGTK webview to enable getUserMedia (the
+# media-stream settings + allowing the permission-request). The version is a 2.x
+# range so Cargo unifies it with the exact `webkit2gtk` that wry links; the
+# `v2_38` feature matches wry's, which is what unlocks `set_enable_webrtc`.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "2", features = ["v2_38"] }

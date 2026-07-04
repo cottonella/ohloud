@@ -10,8 +10,7 @@ FROM node:24-slim AS build
 WORKDIR /app
 
 # Install against the lockfile first (this layer is cached until deps change).
-# Skip the Electron binary download — this image only builds the web app.
-ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+# Only the web app is built here — no Tauri/Rust toolchain is involved.
 COPY package.json package-lock.json ./
 RUN npm ci
 

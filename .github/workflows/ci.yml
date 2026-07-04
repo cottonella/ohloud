@@ -1,9 +1,10 @@
 name: CI
 
-# Lint + tests + the full build (static site AND the Electron main bundle) on
-# every PR and push to main. This is what turns a Dependabot bump into a
-# self-verifying PR: same-repo PRs run THIS file as modified by the PR, so a
-# bumped checkout/setup-node proves itself in the very run that gates its merge.
+# Lint + tests + the static-site build on every PR/push to main, PLUS a Tauri
+# Rust compile check — the desktop app's Rust core is only ever compiled in CI,
+# so this is where a broken src-tauri/ (or the webkit2gtk version pin) is caught.
+# Same-repo PRs run THIS file as modified by the PR, so a bumped
+# checkout/setup-node/action proves itself in the very run that gates its merge.
 on:
   pull_request:
     branches: [main]
@@ -24,19 +25,37 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
         with:
-          # engines.node is the single source of truth — bump it there (plus the
-          # Dockerfile's FROM) at LTS time and every workflow follows.
           node-version-file: package.json
           cache: npm
-      - name: Install (skip Electron binary — nothing is packaged here)
+      - name: Install
         run: npm ci
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      # `build` = `generate` (the site) + the Electron main vite bundle, so a PR
-      # that breaks electron/ can't slip through to release time. Packaging with
-      # electron-builder (which is what needs the binary) stays release-only.
-      - name: Build the site + Electron main
-        run: npm run build
+      - name: Build the static site
+        run: npm run generate
+
+  # Compile the Tauri Rust core (embedding the built frontend via
+  # generate_context!) so a change that breaks src-tauri/ or the config can't
+  # slip through to release time. Bundling installers stays release-only, and
+  # --debug --no-bundle keeps this fast.
+  tauri:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Tauri Linux build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+      - name: Install
+        run: npm ci
+      - name: Compile the desktop app (no bundle)
+        run: npm run tauri build -- --debug --no-bundle

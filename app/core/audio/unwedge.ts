@@ -53,15 +53,13 @@ function ticks(ctx: AudioContext, windowMs: number): Promise<boolean> {
 }
 
 /**
- * Build a fresh context with an inaudible keep-alive source and judge it by
- * the one honest signal: does the render clock tick within `windowMs`?
- * Resolves the live context, or null after closing the frozen one.
+ * Build a fresh context with an inaudible keep-alive source: it both nudges the
+ * engine and holds the session while the caller works, and dies with the
+ * context on close().
  */
-async function probeContext(windowMs: number): Promise<AudioContext | null> {
+function buildContext(): AudioContext {
   const ctx = new AudioContext()
   try {
-    // The keep-alive both nudges the engine and holds the session while the
-    // caller works; it dies with the context on close().
     const src = ctx.createConstantSource()
     const mute = ctx.createGain()
     mute.gain.value = 0
@@ -72,6 +70,16 @@ async function probeContext(windowMs: number): Promise<AudioContext | null> {
   catch {
     // a context that can't build a source will fail the clock check
   }
+  return ctx
+}
+
+/**
+ * Judge a fresh context by the one honest signal: does the render clock tick
+ * within `windowMs`? Resolves the live context, or null after closing the
+ * frozen one.
+ */
+async function probeContext(windowMs: number): Promise<AudioContext | null> {
+  const ctx = buildContext()
   if (await ticks(ctx, windowMs))
     return ctx
   // Fully release before we report "wedged": a half-open context left dangling
@@ -83,6 +91,22 @@ async function probeContext(windowMs: number): Promise<AudioContext | null> {
     // already closing
   }
   return null
+}
+
+/**
+ * iOS/iPadOS — the only platform with the relaunch audio wedge. Everywhere else
+ * (desktop browsers, Android, and the Tauri/WebView2 desktop app) a
+ * gesture-started context just runs, so the tick probe would only ever
+ * false-positive — WebView2's first context in particular is slow enough to
+ * start that it trips the window. Detection mirrors `usePwaInstall`.
+ */
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined')
+    return false
+  if (/iP(?:hone|ad|od)/i.test(navigator.userAgent))
+    return true
+  // iPadOS 13+ masquerades as macOS; disambiguate via touch support.
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
 }
 
 /**
@@ -141,11 +165,20 @@ function waitForThaw(signal?: AbortSignal, onRetry?: (retry: () => void) => void
 
 /**
  * Acquire an AudioContext that PROVABLY renders. Call from a user gesture.
- * Healthy launches resolve in well under a second; wedged ones report via
- * `onWedged` and resolve after the user's recovery. Rejects with AbortError
+ * On iOS, healthy launches resolve in well under a second while wedged ones
+ * report via `onWedged` and resolve after the user's recovery. Off iOS there is
+ * no relaunch wedge, so the probe is skipped and a live context is returned
+ * directly — the iOS-only recovery banner must never appear on desktop (it did
+ * in the Tauri webview, where the probe false-fired). Rejects with AbortError
  * when `signal` aborts.
  */
 export async function acquireLiveContext(options: UnwedgeOptions = {}): Promise<AudioContext> {
+  if (!isIOS()) {
+    const ctx = buildContext()
+    await ctx.resume().catch(() => {})
+    return ctx
+  }
+
   let ctx = await probeContext(600)
   if (!ctx) {
     options.onWedged?.()

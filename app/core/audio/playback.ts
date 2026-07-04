@@ -1,4 +1,4 @@
-// Speaker playback of a PCM frame via the Web Audio API. Browser/Electron only.
+// Speaker playback of a PCM frame via the Web Audio API. Browser/Tauri only.
 // Open from a user gesture so the AudioContext is allowed to start. The context
 // comes from acquireLiveContext(), which handles the iOS 26 relaunch wedge —
 // see unwedge.ts for the full story.

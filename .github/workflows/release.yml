@@ -59,10 +59,8 @@ jobs:
         with:
           node-version-file: package.json # engines.node — the one place to bump at LTS time
           cache: npm
-      - name: Install (skip Electron binary — web build only)
+      - name: Install
         run: npm ci
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
       - name: Generate the static site
         run: npm run generate
       - name: SPA fallback, disable Jekyll, attach custom domain
@@ -99,7 +97,11 @@ jobs:
         if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal builds, never deploys
         uses: actions/deploy-pages@v5
 
-  # ── Desktop apps: one artifact per OS, renamed to ohloud-<version>-<platform> ──
+  # ── Desktop apps: native installers per OS, built + bundled by Tauri ──────────
+  # tauri-action runs `npm run generate` (the config's beforeBuildCommand),
+  # compiles the Rust core, and produces installers. With no tagName/releaseId it
+  # only BUILDS — the release job below does the publishing, so the deploy gate
+  # (and the rehearsal skip) stays in one place.
   desktop:
     needs: verify
     strategy:
@@ -108,46 +110,56 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            glob: dist-electron/*.zip
-            ext: zip
-          - os: macos-latest
+            rust-targets: ''
+            args: ''
+          - os: macos-latest # Apple-silicon runner; universal target covers Intel too
             platform: mac
-            glob: dist-electron/*.zip
-            ext: zip
-          - os: ubuntu-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            args: --target universal-apple-darwin
+          - os: ubuntu-22.04 # pin the glibc/webkit baseline of the AppImage
             platform: linux
-            glob: dist-electron/*.AppImage
-            ext: AppImage
+            rust-targets: ''
+            args: ''
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      - name: Install Tauri Linux build deps
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - uses: actions/setup-node@v6
         with:
           node-version-file: package.json # engines.node — the one place to bump at LTS time
           cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
       - name: Install
         run: npm ci
-      - name: Build web + Electron main
-        run: npm run build
-      - name: Package the desktop app
-        run: npx electron-builder --publish never
+      - name: Build the Tauri installers
+        uses: tauri-apps/tauri-action@v0
         env:
-          # Ship an unsigned build — don't try to auto-discover signing certs.
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-      # Stage into a workspace-relative dir, not /tmp: on the Windows runner
-      # Git Bash's /tmp and the Node upload-artifact action's /tmp resolve to
-      # different places, so the upload saw nothing. A relative path is resolved
-      # against GITHUB_WORKSPACE by both, so they agree on every OS.
-      - name: Stage the renamed artifact
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+      # Flatten every produced installer into one dir so the release job can
+      # collect them with a single pattern. Tauri's filenames already carry the
+      # version + arch (e.g. ohloud_0.1.0_x64-setup.exe). A workspace-relative
+      # staging dir keeps the Windows runner's Git Bash /tmp and upload-artifact
+      # agreeing on the path.
+      - name: Stage the installers
         shell: bash
         run: |
-          ver="${GITHUB_REF_NAME#v}"
-          ver="${ver//\//-}" # rehearsals dispatch from branches whose names may carry slashes (dependabot/…)
           mkdir -p staging
-          file=$(ls ${{ matrix.glob }} | head -n1)
-          dest="staging/ohloud-${ver}-${{ matrix.platform }}.${{ matrix.ext }}"
-          cp "$file" "$dest"
-          echo "Staged $file -> $dest"
+          find src-tauri/target -type f -path '*/release/bundle/*' \
+            \( -name '*.exe' -o -name '*.msi' -o -name '*.dmg' \
+               -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
+            -exec cp {} staging/ \;
+          ls -R staging
       - uses: actions/upload-artifact@v4
         with:
           name: ohloud-${{ matrix.platform }}
@@ -214,7 +226,9 @@ jobs:
       - name: Write SHA-256 checksums
         run: |
           cd /tmp/dl
-          sha256sum ohloud-* > SHA256SUMS.txt
+          # `ohloud*` matches every installer (ohloud_… and the rpm's ohloud-…)
+          # while excluding the checksum file we're writing.
+          sha256sum ohloud* > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal stops short of a Release
@@ -222,7 +236,5 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            /tmp/dl/ohloud-*-windows.zip
-            /tmp/dl/ohloud-*-mac.zip
-            /tmp/dl/ohloud-*-linux.AppImage
+            /tmp/dl/ohloud*
             /tmp/dl/SHA256SUMS.txt

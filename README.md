@@ -37,7 +37,7 @@ The same cuddly app, in whichever shape suits you:
     right end of the address bar (or browser menu → **Install app…**), then
     **Install**. On Android: menu → **Add to Home screen**.
   - The **Download** button inside the app walks you through the same steps.
-- **💻 Desktop app** — an Electron build for Windows, macOS and Linux, ready
+- **💻 Desktop app** — a Tauri build for Windows, macOS and Linux, ready
   to download from the
   [releases page](https://github.com/cottonella/ohloud/releases).
 - **🏡 Self-hosted** — *ohloud* is a static site with no backend. Run the
@@ -126,7 +126,7 @@ impractical over sound (tens of minutes).
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/windows8/windows8-original.svg" width="15" height="15" alt="Windows" /> Windows ·
   <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Apple_logo_grey.svg" width="13" height="15" alt="macOS" /> macOS ·
   <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg" width="16" height="16" alt="Linux" /> Linux
-  — the Electron app uses the same Web Audio path; macOS asks once for
+  — the Tauri app uses the same Web Audio path; macOS asks once for
   microphone consent.
 - **Mobile:**
   <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Apple_logo_grey.svg" width="13" height="15" alt="iOS" /> iOS ·
@@ -144,7 +144,7 @@ find the chirp, read the header, demodulate, correct errors, verify a tail hash,
 decrypt.
 
 The engine (`app/core/`) is framework-agnostic TypeScript, pure-JS (no WASM), and
-unit-tested; the Vue UI and Electron shell are thin layers over it.
+unit-tested; the Vue UI and Tauri shell are thin layers over it.
 
 ## Develop
 
@@ -155,27 +155,33 @@ npm install
 npm run dev
 ```
 
-Run as a **desktop app** (Nuxt dev server + Electron, live-reload including the
-main process):
+Run as a **desktop app** (the Nuxt dev server inside a live-reloading Tauri
+window; needs the Rust toolchain — see
+[Tauri's prerequisites](https://v2.tauri.app/start/prerequisites/)):
 
 ```bash
-npm run electron:dev
+npm run tauri dev
 ```
 
-`.vscode/launch.json` has debug configs for the main process, the renderer, and
-the website (Chrome) — open Run & Debug, pick **Electron: Main + Renderer**, F5.
+`.vscode/launch.json` has debug configs for the Tauri app (Rust, via the
+CodeLLDB extension) and the website (Chrome) — open Run & Debug and pick one.
+
+The desktop build carries a tiny typed IPC bridge (tRPC over Tauri). Sanity-check
+it from the app's DevTools console: `await window.trpc.native.query()` returns
+`{ source: 'tauri', … }` in the desktop app, or `{ source: 'web' }` on the website.
 
 ## Build & package
 
 ```bash
-npm run generate   # static website only -> .output/public (deploy to any static host)
-npm run build      # static site + electron bundle (prereq for packaging)
-npm run pack       # + package into a runnable folder (dist-electron/*-unpacked/)
-npm run dist       # + package a distributable .zip / AppImage (no installer)
+npm run generate       # static website only -> .output/public (deploy to any static host)
+npm run tauri build    # native desktop installers for the current OS
 ```
 
-Targets are `zip` (Windows/macOS) and `AppImage` (Linux) in `package.json` →
-`build`; switch to `nsis`/`dmg` for an installer.
+`npm run tauri build` compiles the Rust core and bundles installers into
+`src-tauri/target/release/bundle/` — NSIS + MSI on Windows, `.dmg` on macOS,
+`.deb`/`.rpm`/`.AppImage` on Linux (configured under `bundle` in
+[`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json)). Tauri only builds for
+the OS it runs on; the release workflow builds all three via a CI matrix.
 
 ## Self-host
 

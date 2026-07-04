@@ -2,56 +2,44 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // Debug the Electron MAIN process (electron/main.ts, via sourcemaps).
-      // Builds the dev electron bundle + starts nuxt dev first, launches
-      // Electron pointed at the dev server, and exposes the renderer over
-      // CDP port 9223 for the renderer config.
-      "name": "Electron: Main",
-      "type": "node",
+      // Debug the Tauri app (Rust side) against the live Nuxt dev server.
+      // Needs the CodeLLDB extension (vadimcn.vscode-lldb) and the Rust
+      // toolchain. Starts `nuxt dev`, cargo-builds the debug binary, and
+      // launches it pointed at the dev server (devUrl in tauri.conf.json).
+      "type": "lldb",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "debug:prepare",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/electron/dist/electron",
-      "windows": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/electron/dist/electron.exe"
+      "name": "Tauri Development Debug",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./src-tauri/Cargo.toml",
+          "--no-default-features"
+        ]
       },
-      "osx": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
-      },
-      "args": [".", "--remote-debugging-port=9223"],
-      "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/electron/dist/**/*.cjs"],
-      "outputCapture": "std",
-      "console": "integratedTerminal"
+      "preLaunchTask": "ui:dev"
     },
     {
-      // Debug the RENDERER (the Nuxt site running inside Electron).
-      // Attaches to the CDP port opened by the "Electron: Main" config.
-      "name": "Electron: Renderer",
-      "type": "chrome",
-      "request": "attach",
-      "port": 9223,
-      "webRoot": "${workspaceFolder}/app",
-      "timeout": 30000,
-      "restart": true
+      // Debug the Tauri app against the generated static site (production shape).
+      "type": "lldb",
+      "request": "launch",
+      "name": "Tauri Production Debug",
+      "cargo": {
+        "args": [
+          "build",
+          "--release",
+          "--manifest-path=./src-tauri/Cargo.toml"
+        ]
+      },
+      "preLaunchTask": "ui:build"
     },
     {
-      // Debug the app as a plain WEBSITE in Chrome (no Electron).
+      // Debug the app as a plain WEBSITE in Chrome (no Tauri, no Rust needed).
       "name": "Website (Chrome)",
       "type": "chrome",
       "request": "launch",
-      "preLaunchTask": "nuxt:dev",
+      "preLaunchTask": "ui:dev",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/app"
-    }
-  ],
-  "compounds": [
-    {
-      // One click to debug both the Electron main process and the renderer.
-      "name": "Electron: Main + Renderer",
-      "configurations": ["Electron: Main", "Electron: Renderer"],
-      "stopAll": true,
-      "presentation": { "order": 1 }
     }
   ]
 }

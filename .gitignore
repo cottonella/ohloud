@@ -4,10 +4,6 @@
 .data
 dist
 
-# Electron build output
-dist-electron
-electron/dist
-
 # Dependencies
 node_modules
 

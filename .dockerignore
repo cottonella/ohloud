@@ -3,8 +3,7 @@
 node_modules
 .output
 .nuxt
-dist-electron
-electron/dist
+src-tauri
 .git
 .github
 .vscode

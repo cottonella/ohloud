@@ -8,8 +8,7 @@ export default antfu(
     ignores: [
       '.output',
       '.nuxt',
-      'dist-electron',
-      'electron/dist',
+      'src-tauri',
     ],
   },
   {

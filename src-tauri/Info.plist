@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Merged into the generated Info.plist by the Tauri CLI. The microphone is
+       the Receive tab's only OS-level need; macOS shows this string when it
+       first asks the user for consent. -->
+  <key>NSMicrophoneUsageDescription</key>
+  <string>ohloud listens through the microphone to receive secrets sent as sound.</string>
+</dict>
+</plist>
