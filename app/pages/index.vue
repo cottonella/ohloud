@@ -19,7 +19,7 @@ const showInstall = ref(false)
       </div>
     </header>
 
-    <div class="card w-full max-w-lg bg-base-100 shadow-xl">
+    <div class="card glass-card w-full max-w-lg">
       <div class="card-body">
         <PillTabs
           v-model="tab"
@@ -38,8 +38,8 @@ const showInstall = ref(false)
       </div>
     </div>
 
-    <!-- Kept on an opaque card so the text stays readable over the animated scene. -->
-    <div class="bg-base-100/90 mt-5 w-full max-w-lg rounded-3xl p-4 shadow-lg backdrop-blur-md">
+    <!-- Frosted glass: the blur diffuses the animated scene so text stays readable. -->
+    <div class="glass-card mt-5 w-full max-w-lg rounded-3xl p-4">
       <details class="help text-sm">
         <summary class="help-summary cursor-pointer text-center font-medium opacity-70 transition hover:opacity-100">
           How it works?
@@ -84,6 +84,32 @@ const showInstall = ref(false)
 </template>
 
 <style scoped>
+/* Frosted-glass panels: translucent base tint + a backdrop blur that lets the
+   pastel scene glow through, a soft white top edge, and a diffused warm shadow.
+   Falls back to a near-opaque fill where backdrop-filter or transparency is
+   unavailable (older engines, reduced-transparency preference). */
+.glass-card {
+  background: oklch(98% 0.02 85 / 0.62);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid oklch(100% 0 0 / 0.5);
+  box-shadow:
+    0 8px 30px oklch(45% 0.05 60 / 0.16),
+    inset 0 1px 0 oklch(100% 0 0 / 0.55);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card {
+    background: oklch(98% 0.02 85 / 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-card {
+    background: var(--color-base-100);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 .swap-enter-active,
 .swap-leave-active {
   transition:
