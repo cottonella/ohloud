@@ -80,5 +80,9 @@
         "AppImage"
       ]
     }
+  },
+  "dependencies": {
+    "@fontsource/kanchenjunga": "^5.2.2",
+    "@fontsource/pattaya": "^5.2.8"
   }
 }
