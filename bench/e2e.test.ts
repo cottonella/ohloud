@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fecDecode, fecEncode } from '../app/core/fec/blocks'
 import { decodePcm, encodeFile, estimateDurationSec } from '../app/core/ohloud'
 import { assembleFrame, parseFrame } from '../app/core/protocol/frame'
-import { encodeWireHeader, FEC_RS, MODE_OFDM_QPSK, MODE_OFDM_QPSK_WIDE, WIRE_VERSION } from '../app/core/protocol/wire-header'
+import { encodeWireHeader, FEC_RS, MODE_OFDM_QAM16_WIDE, MODE_OFDM_QPSK, MODE_OFDM_QPSK_WIDE, WIRE_VERSION } from '../app/core/protocol/wire-header'
 import { simulateChannel } from './channel'
 import { randomBytes } from './modem'
 
@@ -40,14 +40,11 @@ describe('end-to-end through the calibrated rooms', () => {
     expect(roundTrip('fast', 1000, NORMAL, 44)).toBe(true)
   }, 20_000)
 
-  it('turbo (wide lane) survives the quiet room', () => {
+  // Turbo is 16-QAM: a quiet-room specialist by design. It has no normal-room
+  // spec on purpose — that habitat belongs to Fast (see the envelope pins).
+  it('turbo (16-QAM wide lane) survives the quiet room', () => {
     expect(roundTrip('turbo', 1000, QUIET, 11)).toBe(true)
     expect(roundTrip('turbo', 1000, QUIET, 22)).toBe(true)
-  }, 20_000)
-
-  it('turbo (wide lane) survives the normal room', () => {
-    expect(roundTrip('turbo', 1000, NORMAL, 33)).toBe(true)
-    expect(roundTrip('turbo', 1000, NORMAL, 44)).toBe(true)
   }, 20_000)
 
   it('robust survives the noisy room', () => {
@@ -57,22 +54,27 @@ describe('end-to-end through the calibrated rooms', () => {
 })
 
 describe('wire compatibility', () => {
-  it('fast keeps the classic lane; turbo takes the wide lane', () => {
+  it('fast keeps the classic lane; turbo takes the wide 16-QAM lane', () => {
     const fast = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'fast', sampleRate: SR }).pcm, SR)
     expect(fast.header.mode).toBe(MODE_OFDM_QPSK)
     expect(fast.header.fecNsym).toBe(64)
     const turbo = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'turbo', sampleRate: SR }).pcm, SR)
-    expect(turbo.header.mode).toBe(MODE_OFDM_QPSK_WIDE)
+    expect(turbo.header.mode).toBe(MODE_OFDM_QAM16_WIDE)
     expect(turbo.header.fecNsym).toBe(64)
   }, 20_000)
 
-  it('still decodes the classic 6.5 kHz Fast lane (old senders keep working)', () => {
-    // Hand-build a v1-style frame on the classic lane and demodulate it.
+  // No tier sends these two lanes anymore, but deployed receivers must keep
+  // decoding them: 0x01 is what v1 senders emit, and 0x04 (wide QPSK) is the
+  // middle gear a phase-3 channel probe will hand out.
+  it.each([
+    ['classic 6.5 kHz QPSK (v1 senders)', MODE_OFDM_QPSK],
+    ['wide 10 kHz QPSK (phase-3 middle gear)', MODE_OFDM_QPSK_WIDE],
+  ])('still decodes the %s lane', (_name, mode) => {
     const blob = randomBytes(400, 8)
     const { data, meta } = fecEncode(blob, { nsym: 64, repair: 0 })
     const header = encodeWireHeader({
       protoVer: WIRE_VERSION,
-      mode: MODE_OFDM_QPSK,
+      mode,
       fec: FEC_RS,
       flags: 0,
       blobLen: blob.length,
@@ -80,9 +82,9 @@ describe('wire compatibility', () => {
       fecNsym: 64,
       tailHash: new Uint8Array(16),
     })
-    const pcm = assembleFrame(header, data, SR, MODE_OFDM_QPSK)
+    const pcm = assembleFrame(header, data, SR, mode)
     const parsed = parseFrame(pcm, SR)
-    expect(parsed.header.mode).toBe(MODE_OFDM_QPSK)
+    expect(parsed.header.mode).toBe(mode)
     const recovered = fecDecode(parsed.fecData, meta)
     expect(recovered.length).toBe(blob.length)
     expect(recovered.every((b, i) => b === blob[i])).toBe(true)

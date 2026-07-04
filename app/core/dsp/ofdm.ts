@@ -193,10 +193,24 @@ export function modulateOfdm(data: Uint8Array, cfg: OfdmConfig): Float32Array {
       out[off + cfg.cpSize + i] = re[i]!
   }
 
-  // Scale to a fixed peak so clean playback doesn't clip.
-  let peak = 0
+  // PAPR limiting, then scale to a fixed peak so clean playback doesn't clip.
+  // Raw OFDM has ~22 dB peak-to-RMS: normalizing rare peaks to the amplitude
+  // ceiling used to transmit the payload ~20 dB quieter than the chirp/header
+  // at the same volume. Clipping at 4×RMS first buys ~10 dB of payload power
+  // for zero airtime; the mild in-band distortion sits far below the RS
+  // budget (bench, 2026-07: framed byte errors ×3.4 lower, clean floor at
+  // 40 dB SNR). 64-QAM's decision distances are too tight for that floor, so
+  // it clips gently. Wire-transparent — receivers just hear a louder payload.
+  let power = 0
   for (let i = 0; i < out.length; i++)
+    power += out[i]! * out[i]!
+  const clipK = cfg.constellation === 'qam64' ? 6 : 4
+  const clipCeil = clipK * Math.sqrt(power / out.length)
+  let peak = 0
+  for (let i = 0; i < out.length; i++) {
+    out[i] = Math.max(-clipCeil, Math.min(clipCeil, out[i]!))
     peak = Math.max(peak, Math.abs(out[i]!))
+  }
   if (peak > 0) {
     const scale = cfg.amplitude / peak
     for (let i = 0; i < out.length; i++)

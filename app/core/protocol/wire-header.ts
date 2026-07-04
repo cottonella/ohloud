@@ -17,16 +17,23 @@ export const MODE_OFDM_QPSK = 0x01
 export const MODE_OFDM_QAM16 = 0x02
 export const MODE_OFDM_QAM64 = 0x03
 /**
- * QPSK over the wide 10 kHz lane — the Turbo tier. Old receivers see an
- * unknown mode and reject cleanly; new receivers decode both lanes.
+ * QPSK over the wide 10 kHz lane. No tier sends it since Turbo moved to
+ * 16-QAM, but receivers keep decoding it — it's the middle gear a phase-3
+ * channel probe will want to pick automatically.
  */
 export const MODE_OFDM_QPSK_WIDE = 0x04
+/**
+ * 16-QAM over the wide 10 kHz lane — the Turbo tier: ~2× the wide-QPSK rate,
+ * strictly a quiet-room modulation (amplitude decisions don't survive real
+ * reverb). Old receivers see an unknown mode and reject cleanly.
+ */
+export const MODE_OFDM_QAM16_WIDE = 0x05
 export const FEC_RS = 0x00
 export const FEC_RS_FOUNTAIN = 0x01 // inner RS per block + a RaptorQ fountain across blocks
 
-/** True if `mode` selects the Fast OFDM payload modem. */
+/** True if `mode` selects the Fast OFDM payload modem (0x01–0x05 are contiguous). */
 export function modeIsOfdm(mode: number): boolean {
-  return (mode >= MODE_OFDM_QPSK && mode <= MODE_OFDM_QAM64) || mode === MODE_OFDM_QPSK_WIDE
+  return mode >= MODE_OFDM_QPSK && mode <= MODE_OFDM_QAM16_WIDE
 }
 
 /** True if the receiver knows how to demodulate this payload mode. */
@@ -43,7 +50,7 @@ export function modeConstellation(mode: number): Constellation {
 
 /** Subcarrier band ceiling (Hz) carried by an OFDM mode byte. */
 export function modeBandHz(mode: number): number {
-  return mode === MODE_OFDM_QPSK_WIDE ? OFDM_WIDE_BAND_HZ : OFDM_BAND_HZ
+  return mode === MODE_OFDM_QPSK_WIDE || mode === MODE_OFDM_QAM16_WIDE ? OFDM_WIDE_BAND_HZ : OFDM_BAND_HZ
 }
 
 /** Mode byte for an OFDM constellation. */

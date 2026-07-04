@@ -90,7 +90,7 @@ estimated **transmission time** before you send:
 |---|---|---|
 | 🐢 **Robust** (MFSK) | ~50–70 B/s | noisy rooms, cross-device, any speaker |
 | 🐇 **Fast** (OFDM / QPSK) | ~0.3–0.45 KB/s | most rooms without heavy echo |
-| 🚀 **Turbo** (OFDM / QPSK, wide band) | ~0.4–0.8 KB/s | quiet rooms, devices side by side |
+| 🚀 **Turbo** (OFDM / 16-QAM, wide band) | ~0.6–1.4 KB/s | quiet rooms, devices side by side |
 
 Rough end-to-end times (chime included), measured in the acoustic loopback
 bench and decoded through each mode's advertised room:
@@ -98,8 +98,8 @@ bench and decoded through each mode's advertised room:
 | Payload | 🐢 Robust | 🐇 Fast | 🚀 Turbo |
 |---|---|---|---|
 | a password (~30 B) | ~7 s | ~3 s | ~3 s |
-| a short message (~1 KB) | ~21 s | ~5 s | ~4 s |
-| a small file (~10 KB) | ~2.5 min | ~25 s | ~14 s |
+| a short message (~1 KB) | ~21 s | ~5 s | ~3.5 s |
+| a small file (~10 KB) | ~2.5 min | ~25 s | ~9 s |
 
 Rates are all-inclusive — encryption, error correction, framing. Files carry
 ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB is
