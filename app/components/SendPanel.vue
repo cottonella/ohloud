@@ -51,6 +51,24 @@ const estimate = computed(() => {
   return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value) + j : 0
 })
 
+// Drives the description card under the speed selector: mascot, one-word tag,
+// a professional blurb, and a speed/sturdiness meter (each out of 3). Accents
+// are the mascots' candy stroke colors (ICON-THEME.md).
+const SPEED_INFO = {
+  robust: { icon: 'turtle', name: 'Robust', tag: 'Surest', accent: '#37B27C', speed: 1, sturdy: 3, blurb: 'Slow but sure — cuts through background noise and reaches any device. The safe bet.' },
+  fast: { icon: 'rabbit', name: 'Fast', tag: 'Everyday', accent: '#E877AA', speed: 2, sturdy: 2, blurb: 'Quick, and forgiving of most rooms and hardware — a dependable everyday choice.' },
+  turbo: { icon: 'rocket', name: 'Turbo', tag: 'Fastest', accent: '#5AA9F0', speed: 3, sturdy: 1, blurb: 'The fastest — for a calm room, close devices, and capable hardware.' },
+} as const
+const speedInfo = computed(() => SPEED_INFO[speed.value])
+
+// The card slides toward the faster side when a quicker tier is picked, and
+// back the other way when dropping down — direction feeds the CSS via --slide.
+const SPEED_ORDER = { robust: 0, fast: 1, turbo: 2 }
+const slideSign = ref(1)
+watch(speed, (next, prev) => {
+  slideSign.value = SPEED_ORDER[next] >= SPEED_ORDER[prev] ? 1 : -1
+})
+
 const estimateLabel = computed(() => {
   const s = estimate.value
   if (s < 60)
@@ -286,7 +304,7 @@ onBeforeUnmount(() => {
       <div v-if="mode === 'text'" class="secret-box">
         <textarea
           v-model="text"
-          class="textarea textarea-bordered h-36 w-full text-base"
+          class="textarea textarea-bordered h-28 w-full text-base"
           :class="{ masked: !showText }"
           placeholder="Type a secret message, a password, anything…"
           autocomplete="off"
@@ -360,12 +378,36 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
-        <p v-if="speed === 'fast'" class="text-xs opacity-60">
-          <AppIcon name="rabbit" :size="13" /> Much faster — likes a quiet room with the devices close. <AppIcon name="turtle" :size="13" /> Robust is the sturdiest in noise.
-        </p>
-        <p v-else-if="speed === 'turbo'" class="text-xs opacity-60">
-          <AppIcon name="rocket" :size="13" /> The speediest — best in a quiet room with the devices side by side. If it struggles, <AppIcon name="rabbit" :size="13" /> Fast shrugs off more noise.
-        </p>
+        <div class="speed-card-wrap" :style="{ '--slide': slideSign }">
+          <Transition name="speed-card">
+            <div :key="speed" class="speed-card" :style="{ '--speed-accent': speedInfo.accent }">
+              <span class="speed-card-badge"><AppIcon :name="speedInfo.icon" :size="34" /></span>
+              <div class="speed-card-body">
+                <div class="speed-card-head">
+                  <span class="speed-card-name">{{ speedInfo.name }}</span>
+                  <span class="speed-card-tag">{{ speedInfo.tag }}</span>
+                </div>
+                <p class="speed-card-blurb">
+                  {{ speedInfo.blurb }}
+                </p>
+                <div class="speed-card-meters">
+                  <div class="meter">
+                    <span class="meter-label">Speed</span>
+                    <span class="meter-bars">
+                      <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.speed }" />
+                    </span>
+                  </div>
+                  <div class="meter">
+                    <span class="meter-label">Sturdiness</span>
+                    <span class="meter-bars">
+                      <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.sturdy }" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+        </div>
       </div>
 
       <div class="flex items-center justify-between">
@@ -600,10 +642,117 @@ onBeforeUnmount(() => {
   padding-left: 0.2rem;
   padding-right: 0.45rem;
 }
+
+/* Description card under the selector: a soft summary of the picked speed —
+   mascot badge, one-word tag, blurb, and a speed/sturdiness meter. Its accent
+   (--speed-accent) is the mascot's candy color, set per-mode from script. */
+.speed-card-wrap {
+  position: relative;
+}
+.speed-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4.6rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--color-base-100);
+  border: 1.5px solid var(--color-base-200);
+  border-radius: var(--radius-field);
+}
+.speed-card-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--speed-accent) 15%, var(--color-base-100));
+}
+.speed-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.speed-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+.speed-card-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.speed-card-tag {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--speed-accent), var(--color-base-content) 45%);
+  background: color-mix(in oklch, var(--speed-accent) 18%, var(--color-base-100));
+}
+.speed-card-blurb {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--color-base-content);
+  opacity: 0.68;
+}
+.speed-card-meters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+}
+.speed-card-meters .meter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.speed-card-meters .meter-label {
+  font-size: 0.68rem;
+  opacity: 0.55;
+}
+.speed-card-meters .meter-bars {
+  display: inline-flex;
+  gap: 3px;
+}
+.speed-card-meters .meter-bars span {
+  width: 15px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-base-300);
+  transition: background 0.3s ease;
+}
+.speed-card-meters .meter-bars span.on {
+  background: var(--speed-accent);
+}
+
+/* Soft cross-fade + slide as the card swaps between speeds. The leaving card is
+   pulled out of flow so the incoming one alone defines the height. */
+.speed-card-enter-active,
+.speed-card-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.33, 0, 0.16, 1);
+}
+.speed-card-leave-active {
+  position: absolute;
+  inset: 0;
+}
+.speed-card-enter-from {
+  opacity: 0;
+  transform: translateX(calc(var(--slide, 1) * 18px));
+}
+.speed-card-leave-to {
+  opacity: 0;
+  transform: translateX(calc(var(--slide, 1) * -18px));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .speed-pill,
   .speed-tab,
-  .speed-tab-label {
+  .speed-tab-label,
+  .speed-card-enter-active,
+  .speed-card-leave-active {
     transition: none;
   }
 }
