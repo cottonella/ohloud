@@ -93,13 +93,22 @@ estimated **transmission time** before you send:
 | 🚀 **Turbo** (OFDM / QPSK, wide band) | ~0.4–0.8 KB/s | quiet rooms, devices side by side |
 
 Rough end-to-end times (chime included), measured in the acoustic loopback
-bench and decoded through each mode's advertised room:
+bench with incompressible payloads — the worst case — and decoded through
+each mode's advertised room:
 
 | Payload | 🐢 Robust | 🐇 Fast | 🚀 Turbo |
 |---|---|---|---|
 | a password (~30 B) | ~7 s | ~3 s | ~3 s |
 | a short message (~1 KB) | ~21 s | ~5 s | ~4 s |
 | a small file (~10 KB) | ~2.5 min | ~25 s | ~14 s |
+
+**Compression is on your side.** Before anything becomes sound, *ohloud*
+compresses it — automatically, and only when it actually helps. Text, JSON,
+logs, code, and other compressible content therefore often travels several
+times faster than the table suggests: a 24 KB log file can shrink to a couple
+of kilobytes and arrive in about five seconds. The in-app estimate assumes no
+compression on purpose, so treat it as a promise — real transmissions are
+often quicker, never slower.
 
 Rates are all-inclusive — encryption, error correction, framing. Files carry
 ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB is
