@@ -55,9 +55,9 @@ const estimate = computed(() => {
 // a professional blurb, and a speed/sturdiness meter (each out of 3). Accents
 // are the mascots' candy stroke colors (ICON-THEME.md).
 const SPEED_INFO = {
-  robust: { icon: 'turtle', name: 'Robust', tag: 'Surest', accent: '#37B27C', speed: 1, sturdy: 3, blurb: 'Slow but sure — cuts through background noise and reaches any device. The safe bet.' },
-  fast: { icon: 'rabbit', name: 'Fast', tag: 'Everyday', accent: '#E877AA', speed: 2, sturdy: 2, blurb: 'Quick, and forgiving of most rooms and hardware — a dependable everyday choice.' },
-  turbo: { icon: 'rocket', name: 'Turbo', tag: 'Fastest', accent: '#5AA9F0', speed: 3, sturdy: 1, blurb: 'The fastest — for a calm room, close devices, and capable hardware.' },
+  robust: { icon: 'turtle', name: 'Robust', tag: 'Surest', accent: '#37B27C', speed: 1, sturdy: 3, blurb: 'Slow but sure — any device, any noise.' },
+  fast: { icon: 'rabbit', name: 'Fast', tag: 'Everyday', accent: '#E877AA', speed: 2, sturdy: 2, blurb: 'Speedy without needing a perfect room.' },
+  turbo: { icon: 'rocket', name: 'Turbo', tag: 'Fastest', accent: '#5AA9F0', speed: 3, sturdy: 1, blurb: 'Top speed when it\'s quiet and devices are close.' },
 } as const
 const speedInfo = computed(() => SPEED_INFO[speed.value])
 
