@@ -386,24 +386,24 @@ onBeforeUnmount(() => {
                 <div class="speed-card-head">
                   <span class="speed-card-name">{{ speedInfo.name }}</span>
                   <span class="speed-card-tag">{{ speedInfo.tag }}</span>
+                  <div class="speed-card-meters">
+                    <div class="meter">
+                      <span class="meter-label">Speed</span>
+                      <span class="meter-bars">
+                        <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.speed }" />
+                      </span>
+                    </div>
+                    <div class="meter">
+                      <span class="meter-label">Sturdiness</span>
+                      <span class="meter-bars">
+                        <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.sturdy }" />
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <p class="speed-card-blurb">
                   {{ speedInfo.blurb }}
                 </p>
-                <div class="speed-card-meters">
-                  <div class="meter">
-                    <span class="meter-label">Speed</span>
-                    <span class="meter-bars">
-                      <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.speed }" />
-                    </span>
-                  </div>
-                  <div class="meter">
-                    <span class="meter-label">Sturdiness</span>
-                    <span class="meter-bars">
-                      <span v-for="n in 3" :key="n" :class="{ on: n <= speedInfo.sturdy }" />
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </Transition>
@@ -653,8 +653,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  min-height: 4.6rem;
-  padding: 0.7rem 0.8rem;
+  min-height: 3.4rem;
+  padding: 0.65rem 0.8rem;
   background: var(--color-base-100);
   border: 1.5px solid var(--color-base-200);
   border-radius: var(--radius-field);
@@ -691,16 +691,20 @@ onBeforeUnmount(() => {
   background: color-mix(in oklch, var(--speed-accent) 18%, var(--color-base-100));
 }
 .speed-card-blurb {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 0.78rem;
   line-height: 1.5;
   color: var(--color-base-content);
   opacity: 0.68;
 }
+/* Meters ride up into the header, right-aligned as a tight two-row column, so
+   they no longer add a band below the blurb (bars align on the right edge). */
 .speed-card-meters {
+  margin-left: auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1.1rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-end;
 }
 .speed-card-meters .meter {
   display: flex;
