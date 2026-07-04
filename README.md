@@ -239,6 +239,12 @@ npm run lint       # eslint . (add --fix)
   or otherwise without the AGPL's copyleft obligations — a separate paid license
   is available. Reach out via [github.com/cottonella](https://github.com/cottonella).
 
+**Bundled fonts.** *ohloud* ships two fonts — **Kanchenjunga** (body) and **Pattaya**
+(heading) — each under the [SIL Open Font License 1.1](public/licenses/fonts.txt).
+They're separate works from *ohloud*'s own code; OFL is permissive and imposes
+no obligations on the dual license above. Full notices ship with the app at
+`/licenses/fonts.txt`.
+
 Copyright © 2026 cottonella. Contributions are accepted under the terms in
 [CONTRIBUTING.md](CONTRIBUTING.md), which keep this dual license possible.
 

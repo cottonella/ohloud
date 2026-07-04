@@ -428,6 +428,9 @@ onBeforeUnmount(() => {
 }
 .secret-text {
   width: 100%;
+  /* Monospace so a received password or key is unambiguous — 0 vs O, l vs 1 —
+     and so the reader can trust it character by character. */
+  font-family: var(--font-mono);
   /* Vertically centred by the flex parent; extra end padding keeps multiline text
      clear of the floating action buttons. */
   padding: 0.85rem 1rem;

@@ -11,7 +11,7 @@ const showInstall = ref(false)
       <TeddyBear :size="64" mood="idle" />
       <div>
         <h1 class="text-3xl font-extrabold tracking-tight">
-          ohloud
+          ohloud!
         </h1>
         <p class="text-sm opacity-60">
           send secrets by sound — <Typewriter :words="TAGLINES" />

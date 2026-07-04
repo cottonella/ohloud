@@ -41,6 +41,17 @@
   --noise: 0;
 }
 
+/* Kanchenjunga (an SIL Latin + Kirat Rai typeface) for body, Pattaya (rounded
+   display) for the one big brand heading — both self-hosted via @fontsource
+   (see nuxt.config css) so the offline PWA needs no network. */
+@theme {
+  --font-sans: 'Kanchenjunga', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Pattaya', ui-rounded, 'Trebuchet MS', sans-serif;
+}
+h1 {
+  font-family: var(--font-display);
+}
+
 html,
 body,
 #__nuxt {
@@ -48,6 +59,7 @@ body,
 }
 
 body {
+  font-family: var(--font-sans);
   background:
     radial-gradient(1200px 600px at 50% -10%, oklch(96% 0.05 60 / 0.7), transparent 60%),
     radial-gradient(900px 500px at 90% 110%, oklch(94% 0.06 350 / 0.5), transparent 60%), var(--color-base-200);
