@@ -46,8 +46,9 @@ The same cuddly app, in whichever shape suits you:
 
 ## How to use
 
-**Send** → type text or drop a file → pick 🐢 Robust or 🐇 Fast → **Share** →
-choose a **password** → press **Start** once the other device is listening.
+**Send** → type text or drop a file → pick 🐢 Robust, 🐇 Fast, or 🚀 Turbo →
+**Share** → choose a **password** → press **Start** once the other device is
+listening.
 
 **Receive** → press **Listen** → when the melody arrives, enter the **same
 password** → the text appears (or the file downloads).
@@ -82,22 +83,23 @@ The password is the entire security boundary — **use a strong, high-entropy on
 Sound is an inherently low-bandwidth channel, so *ohloud* is at its best with
 **short secrets** — passwords, keys, notes. Sending **files** is fully
 supported as well, though transfer time grows with size, making it practical
-mainly for small ones. Two modes are available, and the app shows the estimated
-**transmission time** before you send:
+mainly for small ones. Three modes are available, and the app shows the
+estimated **transmission time** before you send:
 
 | Mode | Effective rate | Best for |
 |---|---|---|
 | 🐢 **Robust** (MFSK) | ~50–70 B/s | noisy rooms, cross-device, any speaker |
-| 🐇 **Fast** (OFDM / QPSK) | ~0.4–0.8 KB/s | a quiet room with the devices close |
+| 🐇 **Fast** (OFDM / QPSK) | ~0.3–0.45 KB/s | most rooms without heavy echo |
+| 🚀 **Turbo** (OFDM / QPSK, wide band) | ~0.4–0.8 KB/s | quiet rooms, devices side by side |
 
 Rough end-to-end times (chime included), measured in the acoustic loopback
 bench and decoded through each mode's advertised room:
 
-| Payload | 🐢 Robust | 🐇 Fast |
-|---|---|---|
-| a password (~30 B) | ~7 s | ~3 s |
-| a short message (~1 KB) | ~21 s | ~4 s |
-| a small file (~10 KB) | ~2.5 min | ~14 s |
+| Payload | 🐢 Robust | 🐇 Fast | 🚀 Turbo |
+|---|---|---|---|
+| a password (~30 B) | ~7 s | ~3 s | ~3 s |
+| a short message (~1 KB) | ~21 s | ~5 s | ~4 s |
+| a small file (~10 KB) | ~2.5 min | ~25 s | ~14 s |
 
 Rates are all-inclusive — encryption, error correction, framing. Files carry
 ~25% **RaptorQ** repair blocks, so a lost chunk heals itself. 1 MB is

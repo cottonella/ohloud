@@ -1,5 +1,7 @@
 // Promise-based wrapper around the codec Web Worker.
 
+import type { TransmitMode } from '~/core'
+
 interface Pending {
   resolve: (value: any) => void
   reject: (error: Error) => void
@@ -59,10 +61,10 @@ export interface DecodeReply {
 
 export function useCodec() {
   return {
-    encodeText(text: string, passphrase: string, sampleRate = 48000, mode: 'robust' | 'fast' = 'robust'): Promise<EncodeReply> {
+    encodeText(text: string, passphrase: string, sampleRate = 48000, mode: TransmitMode = 'robust'): Promise<EncodeReply> {
       return call({ type: 'encodeText', text, passphrase, sampleRate, mode, kdf: GUI_KDF })
     },
-    encodeFile(filename: string, content: Uint8Array, passphrase: string, sampleRate = 48000, mode: 'robust' | 'fast' = 'robust'): Promise<EncodeReply> {
+    encodeFile(filename: string, content: Uint8Array, passphrase: string, sampleRate = 48000, mode: TransmitMode = 'robust'): Promise<EncodeReply> {
       return call({ type: 'encodeFile', filename, content, passphrase, sampleRate, mode, kdf: GUI_KDF }, [content.buffer])
     },
     decode(pcm: Float32Array, passphrase: string, sampleRate = 48000): Promise<DecodeReply> {

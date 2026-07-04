@@ -8,7 +8,7 @@ const codec = useCodec()
 const sound = useXylophone()
 
 const mode = ref<'text' | 'file'>('text')
-const speed = ref<'robust' | 'fast'>('robust')
+const speed = ref<'robust' | 'fast' | 'turbo'>('robust')
 const text = ref('')
 // The secret is masked by default (like a password) so it can't be read over
 // the sender's shoulder; the eye button reveals it to check what was typed.
@@ -347,10 +347,24 @@ onBeforeUnmount(() => {
               <span class="speed-tab-label"><span class="speed-tab-label-in">Fast</span></span>
               <AppIcon name="rabbit" :size="30" />
             </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="speed === 'turbo'"
+              class="speed-tab"
+              :class="{ 'is-active': speed === 'turbo' }"
+              @click="speed = 'turbo'"
+            >
+              <span class="speed-tab-label"><span class="speed-tab-label-in">Turbo</span></span>
+              <AppIcon name="rocket" :size="30" />
+            </button>
           </div>
         </div>
         <p v-if="speed === 'fast'" class="text-xs opacity-60">
           <AppIcon name="rabbit" :size="13" /> Much faster — likes a quiet room with the devices close. <AppIcon name="turtle" :size="13" /> Robust is the sturdiest in noise.
+        </p>
+        <p v-else-if="speed === 'turbo'" class="text-xs opacity-60">
+          <AppIcon name="rocket" :size="13" /> The speediest — best in a quiet room with the devices side by side. If it struggles, <AppIcon name="rabbit" :size="13" /> Fast shrugs off more noise.
         </p>
       </div>
 

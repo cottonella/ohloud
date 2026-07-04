@@ -17,8 +17,8 @@ export const MODE_OFDM_QPSK = 0x01
 export const MODE_OFDM_QAM16 = 0x02
 export const MODE_OFDM_QAM64 = 0x03
 /**
- * QPSK over the wide 10 kHz lane — Fast's default since v0.4. Old receivers
- * see an unknown mode and reject cleanly; new receivers decode both lanes.
+ * QPSK over the wide 10 kHz lane — the Turbo tier. Old receivers see an
+ * unknown mode and reject cleanly; new receivers decode both lanes.
  */
 export const MODE_OFDM_QPSK_WIDE = 0x04
 export const FEC_RS = 0x00

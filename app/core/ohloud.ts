@@ -15,30 +15,37 @@ import { sealFile, sealText } from './container/text'
 import { CorruptedError, UnsupportedError } from './errors'
 import { fecDecode, FecDecodeError, fecEncode } from './fec/blocks'
 import { assembleFrame, chirpSamples, DEFAULT_SAMPLE_RATE, headerSamples, ofdmGuardSamples, parseFrame, payloadSamples } from './protocol/frame'
-import { encodeWireHeader, FEC_RS, FEC_RS_FOUNTAIN, MODE_MFSK, MODE_OFDM_QPSK_WIDE, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
+import { encodeWireHeader, FEC_RS, FEC_RS_FOUNTAIN, MODE_MFSK, MODE_OFDM_QPSK, MODE_OFDM_QPSK_WIDE, modeIsKnown, WIRE_VERSION } from './protocol/wire-header'
 
-/** Robust MFSK (slow, very sturdy) or Fast OFDM (QPSK — higher rate, wants a cleaner channel). */
-export type TransmitMode = 'robust' | 'fast'
+/**
+ * Robust MFSK (slow, very sturdy) · Fast OFDM on the classic 6.5 kHz lane
+ * (much quicker, tolerates a fair bit of noise) · Turbo OFDM on the wide
+ * 10 kHz lane (the speediest — wants a quiet room and close devices).
+ */
+export type TransmitMode = 'robust' | 'fast' | 'turbo'
 
 function modeByte(mode: TransmitMode): number {
-  // QPSK is the Fast default: ~10–30× lower BER than 16-QAM through real room
-  // reverb + band-limiting, and still many times faster than Robust MFSK.
-  // Fast sends on the wide 10 kHz lane (~1.7× the classic lane's subcarriers;
-  // the speed lab measured identical survival through the quiet and normal
-  // presets). Receivers still decode the classic MODE_OFDM_QPSK lane.
-  return mode === 'fast' ? MODE_OFDM_QPSK_WIDE : MODE_MFSK
+  // QPSK everywhere: ~10–30× lower BER than 16-QAM through real room reverb +
+  // band-limiting. Fast keeps the classic lane — its measured noise cliff
+  // (10 dB SNR @ reverb 0.25) is the v1 envelope, bit for bit. Turbo trades
+  // ~8 dB of that cliff for ~1.8× the rate on the wide lane; the envelope
+  // sweep showed a static config can't have both, so the choice is the
+  // user's until a channel probe can make it automatically.
+  return mode === 'turbo' ? MODE_OFDM_QPSK_WIDE : mode === 'fast' ? MODE_OFDM_QPSK : MODE_MFSK
 }
 
 /**
- * Per-mode FEC policy (bench speed lab, 2026-07). Robust keeps worst-case
- * armor — it exists to survive rooms Fast can't. Fast keeps full RS parity
- * but trims the fountain to 10%: leaner parity (RS48) measured 3/20 failures
- * on tiny payloads through the normal room (few blocks → weak-bin errors
- * concentrate), while RS64+10% swept 20/20 at every size and costs the same
- * airtime as RS48 below ~1 KB (identical block counts).
+ * Per-mode FEC policy (bench envelope sweep, 2026-07). Robust and Fast keep
+ * the full v1 armor (their measured envelopes are the product's promises).
+ * Turbo trims the fountain to 10% — worth ~3 dB at a cliff its wide lane
+ * already gave up, and 13% of airtime. Measured dead ends — do not retry:
+ * RS48 parity (tiny payloads fail: few blocks concentrate weak-bin errors)
+ * and TX pre-emphasis (the wide lane's top bins drown at low SNR; no static
+ * power tilt or FEC bridges that — the interleaver spreads the damage to
+ * every block uniformly).
  */
-const FEC_NSYM_BY_MODE: Record<TransmitMode, number> = { robust: 64, fast: 64 }
-const REPAIR_BY_MODE: Record<TransmitMode, number> = { robust: 0.25, fast: 0.10 }
+const FEC_NSYM_BY_MODE: Record<TransmitMode, number> = { robust: 64, fast: 64, turbo: 64 }
+const REPAIR_BY_MODE: Record<TransmitMode, number> = { robust: 0.25, fast: 0.25, turbo: 0.10 }
 
 export interface EncodeOptions {
   /** Argon2id parameters (forwarded to the container). */

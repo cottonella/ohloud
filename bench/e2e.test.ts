@@ -21,7 +21,7 @@ const QUIET = { snrDb: 30, reverb: 0.15, reverbDecaySec: 0.3, bandLow: 200, band
 const NORMAL = { snrDb: 20, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }
 const NOISY = { snrDb: 12, reverb: 0.35, reverbDecaySec: 0.45, bandLow: 400, bandHigh: 10000 }
 
-function roundTrip(mode: 'robust' | 'fast', bytes: number, room: object, seed: number): boolean {
+function roundTrip(mode: 'robust' | 'fast' | 'turbo', bytes: number, room: object, seed: number): boolean {
   const content = randomBytes(bytes, seed)
   const { pcm } = encodeFile('secret.bin', content, PW, { kdf: KDF, mode, sampleRate: SR })
   const dirty = simulateChannel(pcm, { ...room, sampleRate: SR, seed })
@@ -30,14 +30,24 @@ function roundTrip(mode: 'robust' | 'fast', bytes: number, room: object, seed: n
 }
 
 describe('end-to-end through the calibrated rooms', () => {
-  it('fast (wide lane) survives the quiet room', () => {
+  it('fast (classic lane) survives the quiet room', () => {
     expect(roundTrip('fast', 1000, QUIET, 11)).toBe(true)
     expect(roundTrip('fast', 1000, QUIET, 22)).toBe(true)
   }, 20_000)
 
-  it('fast (wide lane) survives the normal room', () => {
+  it('fast (classic lane) survives the normal room', () => {
     expect(roundTrip('fast', 1000, NORMAL, 33)).toBe(true)
     expect(roundTrip('fast', 1000, NORMAL, 44)).toBe(true)
+  }, 20_000)
+
+  it('turbo (wide lane) survives the quiet room', () => {
+    expect(roundTrip('turbo', 1000, QUIET, 11)).toBe(true)
+    expect(roundTrip('turbo', 1000, QUIET, 22)).toBe(true)
+  }, 20_000)
+
+  it('turbo (wide lane) survives the normal room', () => {
+    expect(roundTrip('turbo', 1000, NORMAL, 33)).toBe(true)
+    expect(roundTrip('turbo', 1000, NORMAL, 44)).toBe(true)
   }, 20_000)
 
   it('robust survives the noisy room', () => {
@@ -47,11 +57,13 @@ describe('end-to-end through the calibrated rooms', () => {
 })
 
 describe('wire compatibility', () => {
-  it('fast sends on the wide lane with the per-mode FEC policy', () => {
-    const { pcm } = encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'fast', sampleRate: SR })
-    const { header } = parseFrame(pcm, SR)
-    expect(header.mode).toBe(MODE_OFDM_QPSK_WIDE)
-    expect(header.fecNsym).toBe(64)
+  it('fast keeps the classic lane; turbo takes the wide lane', () => {
+    const fast = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'fast', sampleRate: SR }).pcm, SR)
+    expect(fast.header.mode).toBe(MODE_OFDM_QPSK)
+    expect(fast.header.fecNsym).toBe(64)
+    const turbo = parseFrame(encodeFile('a.bin', randomBytes(400, 7), PW, { kdf: KDF, mode: 'turbo', sampleRate: SR }).pcm, SR)
+    expect(turbo.header.mode).toBe(MODE_OFDM_QPSK_WIDE)
+    expect(turbo.header.fecNsym).toBe(64)
   }, 20_000)
 
   it('still decodes the classic 6.5 kHz Fast lane (old senders keep working)', () => {
@@ -79,7 +91,7 @@ describe('wire compatibility', () => {
 
 describe('estimate ↔ encoder lockstep', () => {
   it('the UI estimate matches the actual frame duration exactly', () => {
-    for (const mode of ['robust', 'fast'] as const) {
+    for (const mode of ['robust', 'fast', 'turbo'] as const) {
       const content = randomBytes(1000, 9) // incompressible → estimate is exact
       const est = estimateDurationSec(content.length, 'blob.bin'.length, SR, mode)
       const { durationSec } = encodeFile('blob.bin', content, PW, { kdf: KDF, mode, sampleRate: SR })
