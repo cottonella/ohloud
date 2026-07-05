@@ -140,26 +140,57 @@ jobs:
           workspaces: ./src-tauri -> target
       - name: Install
         run: npm ci
+      # The version tag is the single source of truth: stamp it into package.json
+      # (which tauri.conf.json reads via "version": "../package.json"), so the
+      # installers carry the tag's version — no Cargo.toml or committed bump. It's
+      # uncommitted, per-runner, and semver-validated by `npm version`. Rehearsals
+      # (workflow_dispatch, no tag) skip it and keep the repo's placeholder.
+      - name: Stamp the app version from the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
       - name: Build the Tauri installers
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: ${{ matrix.args }}
-      # Flatten every produced installer into one dir so the release job can
-      # collect them with a single pattern. Tauri's filenames already carry the
-      # version + arch (e.g. ohloud_0.1.0_x64-setup.exe). A workspace-relative
-      # staging dir keeps the Windows runner's Git Bash /tmp and upload-artifact
-      # agreeing on the path.
+      # Portable Windows build: a Tauri exe is self-contained (WebView2 is a system
+      # runtime + the frontend is embedded), so zipping the compiled binary IS the
+      # portable app. Tauri has no zip bundler, so we make it here.
+      - name: Package the portable Windows app
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ver = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          New-Item -ItemType Directory -Force staging | Out-Null
+          Compress-Archive -Path src-tauri/target/release/ohloud.exe -DestinationPath "staging/ohloud_${ver}_x64-portable.zip" -Force
+      # Flatten this OS's installer into one dir (msi on Windows, AppImage on Linux,
+      # dmg on macOS — alongside the portable zip staged above). Tauri's filenames
+      # already carry version + arch (e.g. ohloud_0.3.39_x64_en-US.msi). A
+      # workspace-relative staging dir keeps the Windows runner's Git Bash /tmp and
+      # upload-artifact agreeing on the path.
       - name: Stage the installers
         shell: bash
         run: |
           mkdir -p staging
           find src-tauri/target -type f -path '*/release/bundle/*' \
-            \( -name '*.exe' -o -name '*.msi' -o -name '*.dmg' \
-               -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
+            \( -name '*.msi' -o -name '*.dmg' -o -name '*.AppImage' \) \
             -exec cp {} staging/ \;
           ls -R staging
+      # Turn every release (and every rehearsal) into a real test that the four
+      # shipped artifacts actually got built — a config regression that drops one
+      # fails here loudly instead of silently shipping a gap.
+      - name: Verify the expected artifacts exist
+        shell: bash
+        run: |
+          need() { ls staging/$1 >/dev/null 2>&1 || { echo "::error::Missing expected artifact: $1"; exit 1; }; }
+          case "${{ matrix.platform }}" in
+            windows) need '*.msi'; need '*-portable.zip' ;;
+            linux)   need '*.AppImage' ;;
+            mac)     need '*.dmg' ;;
+          esac
+          echo "OK: expected artifacts present for ${{ matrix.platform }}"
       - uses: actions/upload-artifact@v4
         with:
           name: ohloud-${{ matrix.platform }}
