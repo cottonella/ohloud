@@ -252,7 +252,7 @@ jobs:
           # while excluding the checksum file we're writing.
           sha256sum ohloud* > SHA256SUMS.txt
           cat SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal stops short of a Release
         with:
           generate_release_notes: true
