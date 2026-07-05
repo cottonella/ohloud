@@ -26,7 +26,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Ensure the tag is on main
@@ -54,7 +54,7 @@ jobs:
       name: ${{ github.event_name == 'workflow_dispatch' && 'rehearsal' || 'github-pages' }}
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version-file: package.json # engines.node — the one place to bump at LTS time
@@ -122,7 +122,7 @@ jobs:
             args: ''
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Tauri Linux build deps
         if: matrix.platform == 'linux'
         run: |
@@ -197,7 +197,7 @@ jobs:
       contents: read # checkout
       packages: write # push to ghcr.io
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: docker/setup-qemu-action@v4 # arm64 emulation for the multi-arch build
       - uses: docker/setup-buildx-action@v4
       - name: Log in to GHCR
