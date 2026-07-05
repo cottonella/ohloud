@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { readFileSync } from 'node:fs'
 import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -29,6 +30,21 @@ const CONTENT_SECURITY_POLICY = [
 
 const isProd = process.env.NODE_ENV === 'production'
 
+// The app version is read from package.json at build time and baked into the
+// client bundle (runtimeConfig.public) — a static SPA has no server to ask at
+// runtime. package.json is the single source of truth: `npm version <x>` bumps
+// it and tags the release, so this matches the git tag on every build (web, PWA,
+// Docker, Tauri) with no env vars or git plumbing.
+function appVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version?: string }
+    return pkg.version ?? 'unknown'
+  }
+  catch {
+    return 'unknown'
+  }
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-06-30',
   devtools: { enabled: true },
@@ -37,6 +53,14 @@ export default defineNuxtConfig({
   // purely locally — in the browser, or inside the Tauri desktop app, which
   // serves the generated `.output/public` files from the app's own origin.
   ssr: false,
+
+  // Bake the build-time app version (package.json) into the client bundle so the
+  // UI can show it — read via useRuntimeConfig().public.version.
+  runtimeConfig: {
+    public: {
+      version: appVersion(),
+    },
+  },
 
   modules: ['@vite-pwa/nuxt'],
 

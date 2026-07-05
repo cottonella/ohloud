@@ -7,6 +7,9 @@ type Stage = 'idle' | 'ready' | 'blocked' | 'encoding' | 'playing' | 'done' | 'e
 const codec = useCodec()
 const sound = useXylophone()
 
+// App version (package.json, baked in at build time) — shown as a pill.
+const version = useRuntimeConfig().public.version
+
 const mode = ref<'text' | 'file'>('text')
 const speed = ref<'robust' | 'fast' | 'turbo'>('robust')
 const text = ref('')
@@ -411,7 +414,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex items-center justify-between">
-        <div class="text-sm opacity-70">
+        <div class="flex items-center gap-2 text-sm opacity-70">
+          <span class="badge badge-ghost badge-sm font-mono" title="app version">v{{ version }}</span>
           <span v-if="hasInput">Transmission time: <span class="badge badge-accent badge-sm">{{ estimateLabel }}</span></span>
           <span v-if="hasInput && estimate > 120" class="text-warning ml-2"><AppIcon name="warning" :size="13" /> long transmission</span>
         </div>
