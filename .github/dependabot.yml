@@ -1,6 +1,6 @@
-# Weekly dependency watch across all three ecosystems the repo actually uses.
-# Minor/patch npm bumps arrive grouped as one PR to keep the noise down;
-# majors (and anything security-flagged) still get their own.
+# Weekly dependency watch across all four ecosystems the repo actually uses.
+# Minor/patch npm and Cargo bumps arrive grouped as one PR to keep the noise
+# down; majors (and anything security-flagged) still get their own.
 #
 # The cooldowns let a fresh release age before a PR is opened — most hijacked
 # package versions are yanked within days, so the ecosystem canaries sing
@@ -34,3 +34,19 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+
+  # The Rust crate lives in src-tauri; grouping mirrors npm to keep the noise
+  # down. A new Tauri release (e.g. the eventual GTK4/webkitgtk-6.0 move that
+  # unpins glib) arrives as a PR the CI `tauri` job compile-tests.
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
