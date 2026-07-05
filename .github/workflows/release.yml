@@ -236,7 +236,7 @@ jobs:
       # *.dockerbuild build record), and any one of them failing to download
       # fails the whole job.
       - name: Download the desktop artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ohloud-*
           path: /tmp/dl
