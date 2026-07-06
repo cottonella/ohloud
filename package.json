@@ -1,7 +1,7 @@
 {
   "name": "ohloud",
   "type": "module",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "Nuxt 4 app that also runs as a fully-local Tauri desktop app",
   "author": "cottonella",
