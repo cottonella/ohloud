@@ -55,6 +55,11 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
+          # Only main writes the cache. A branch restores main's copy but never
+          # saves its own — a per-branch save is a sibling-scoped clone no other
+          # branch can read, so it just bloats the 10 GB pool and evicts real
+          # caches. Merging to main re-warms it for everyone.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install
         run: npm ci
       - name: Compile the desktop app (no bundle)

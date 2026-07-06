@@ -138,6 +138,11 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
+          # Only main writes the cache. Tag releases and branch rehearsals restore
+          # main's copy but never save their own — a tag- or branch-scoped clone no
+          # branch can reuse, just 10 GB-pool bloat. Warm it by dispatching this
+          # workflow on main (Actions → Release → Run workflow → branch: main).
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install
         run: npm ci
       - name: Build the Tauri installers
