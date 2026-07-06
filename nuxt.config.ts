@@ -64,15 +64,17 @@ export default defineNuxtConfig({
 
   modules: ['@vite-pwa/nuxt'],
 
-  // Kanchenjunga (body) + Pattaya (main heading), self-hosted, latin subset only —
-  // bundled + precached, no Google CDN, so the offline PWA and 'self'-only CSP hold.
-  // Latin weights only: Kanchenjunga also carries a Kirat Rai subset we don't need.
+  // Kanchenjunga (body) + Pattaya (main heading) + Reddit Mono (the monospaced
+  // secret fields), self-hosted via @fontsource, latin subset only — bundled +
+  // precached, no Google CDN, so the offline PWA and 'self'-only CSP hold. Latin
+  // weights only: Kanchenjunga also carries a Kirat Rai subset we don't need.
   css: [
     '@fontsource/kanchenjunga/latin-400.css',
     '@fontsource/kanchenjunga/latin-500.css',
     '@fontsource/kanchenjunga/latin-600.css',
     '@fontsource/kanchenjunga/latin-700.css',
     '@fontsource/pattaya/latin-400.css',
+    '@fontsource/reddit-mono/latin-400.css',
     '~/assets/css/main.css',
   ],
   vite: {

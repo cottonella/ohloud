@@ -1,7 +1,7 @@
 ohloud — bundled font licenses
 ==============================
 
-ohloud bundles two fonts. Both are licensed under the SIL Open Font License,
+ohloud bundles three fonts. All are licensed under the SIL Open Font License,
 Version 1.1 (OFL). They are separate works from ohloud's own code, which is
 dual-licensed under AGPL-3.0-only plus a commercial license (see the LICENSE
 file). The OFL notice and text below apply to the bundled fonts only, and are
@@ -16,6 +16,9 @@ must accompany the fonts wherever they are distributed).
   Pablo Impallari (www.impallari.com|impallari@gmail.com), Copyright (c) 2010,
   2011, Alexei Vanyashin (www.cyreal.org|a@cyreal.org), with Reserved Font
   Name Lobster.
+
+  Reddit Mono — monospaced secret fields
+  Copyright (c) 2020-2023, Reddit, Inc. (https://github.com/reddit/redditsans)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

@@ -42,11 +42,14 @@
 }
 
 /* Kanchenjunga (an SIL Latin + Kirat Rai typeface) for body, Pattaya (rounded
-   display) for the one big brand heading — both self-hosted via @fontsource
-   (see nuxt.config css) so the offline PWA needs no network. */
+   display) for the one big brand heading, Reddit Mono for the monospaced secret
+   fields — all self-hosted via @fontsource (see nuxt.config css) so the offline
+   PWA needs no network. --font-mono overrides Tailwind's default so the received
+   secret and the composer share one definition. */
 @theme {
   --font-sans: 'Kanchenjunga', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Pattaya', ui-rounded, 'Trebuchet MS', sans-serif;
+  --font-mono: 'Reddit Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
 }
 h1 {
   font-family: var(--font-display);

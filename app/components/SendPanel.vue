@@ -585,7 +585,7 @@ onBeforeUnmount(() => {
 .secret-box .dots {
   box-sizing: border-box;
   margin: 0;
-  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', 'Segoe UI Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 1.5rem;
   letter-spacing: normal;

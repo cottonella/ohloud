@@ -22,6 +22,7 @@
   "dependencies": {
     "@fontsource/kanchenjunga": "^5.2.2",
     "@fontsource/pattaya": "^5.2.8",
+    "@fontsource/reddit-mono": "^5.2.8",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@trpc/client": "11.18.0",
