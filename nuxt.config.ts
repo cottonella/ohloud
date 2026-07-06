@@ -124,9 +124,17 @@ export default defineNuxtConfig({
 
   // Offline-first PWA: a Workbox service worker precaches every built asset, so
   // once installed the app runs with no network (it never needed one). Installable
-  // on iOS via Safari → Share → "Add to Home Screen".
+  // on iOS via Safari → Share → "Add to Home Screen". The SW is registered only on
+  // the website — inside the Tauri desktop app it's skipped (see the service-worker
+  // client plugin), because the assets are already local + versioned with the
+  // binary, and a precaching SW would otherwise serve the previous build on launch.
   pwa: {
     registerType: 'autoUpdate',
+    // Don't let the module auto-register the SW; app/plugins/service-worker.client.ts
+    // does it instead, so registration can be skipped (and cleaned up) under Tauri.
+    client: {
+      registerPlugin: false,
+    },
     manifest: {
       name: 'ohloud',
       short_name: 'ohloud',
