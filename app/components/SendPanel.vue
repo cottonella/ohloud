@@ -16,6 +16,22 @@ const text = ref('')
 // The secret is masked by default (like a password) so it can't be read over
 // the sender's shoulder; the eye button reveals it to check what was typed.
 const showText = ref(false)
+// Universal password-masking: the real textarea keeps native editing/caret/IME
+// but its text is turned transparent, while an aria-hidden overlay paints one
+// bullet per typed character. Monospace on both makes a bullet and a character
+// share one advance, so they wrap identically and the caret lands on the dots —
+// consistent on every device, unlike `-webkit-text-security` (flaky on iOS,
+// absent in Firefox).
+const textareaEl = ref<HTMLTextAreaElement | null>(null)
+const dotsEl = ref<HTMLDivElement | null>(null)
+const maskedText = computed(() => text.value.replace(/[^\n]/g, '•'))
+function syncDots() {
+  if (dotsEl.value && textareaEl.value)
+    dotsEl.value.scrollTop = textareaEl.value.scrollTop
+}
+// Typing auto-scrolls the textarea to keep the caret in view; keep the dots
+// pinned to the same offset so bullet and caret never separate.
+watch(text, () => nextTick(syncDots))
 const file = ref<File | null>(null)
 const dragOver = ref(false)
 
@@ -306,6 +322,7 @@ onBeforeUnmount(() => {
 
       <div v-if="mode === 'text'" class="secret-box">
         <textarea
+          ref="textareaEl"
           v-model="text"
           class="textarea textarea-bordered h-28 w-full text-base"
           :class="{ masked: !showText }"
@@ -314,6 +331,17 @@ onBeforeUnmount(() => {
           autocorrect="off"
           autocapitalize="off"
           spellcheck="false"
+          @scroll="syncDots"
+        />
+        <!-- Password dots: one bullet per character, painted over the transparent
+             textarea text. Inert + aria-hidden — the textarea is the real field.
+             `v-text` keeps template whitespace out of the rendered dots. -->
+        <div
+          v-show="!showText"
+          ref="dotsEl"
+          class="dots"
+          aria-hidden="true"
+          v-text="maskedText"
         />
         <button
           type="button"
@@ -540,16 +568,74 @@ onBeforeUnmount(() => {
 
 .secret-box {
   position: relative;
+  /* The field background lives here so the dots can sit BEHIND a
+     transparent-background textarea — that keeps the textarea (and its native
+     scrollbar) on top, where the scrollbar stays visible. Radius mirrors the
+     textarea so the fill matches its rounded corners. */
+  background: var(--color-base-100);
+  border-radius: var(--radius-field);
 }
-/* Leave room for the reveal button so long lines don't slide under it. */
+/* The textarea and its dots overlay must share one exact text box. Monospace is
+   the trick: a bullet and any character have the same advance, so the two wrap
+   identically and the native caret lands right on the dots — no drift, on any
+   device. This is the universal replacement for `-webkit-text-security`, which
+   was flaky on iOS Safari and unsupported in Firefox. The right padding also
+   leaves room for the reveal button so long lines don't slide under it. */
+.secret-box .textarea,
+.secret-box .dots {
+  box-sizing: border-box;
+  margin: 0;
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', 'Segoe UI Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: normal;
+  padding: 0.75rem 2.75rem 0.75rem 0.875rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  /* Reserve the scrollbar lane on BOTH boxes so their content widths always
+     match — otherwise the textarea's scrollbar would steal ~16px and the dots
+     (behind) would wrap wider than the real text and drift out of alignment. */
+  scrollbar-gutter: stable;
+}
+/* Sit the textarea on top with a transparent background so the dots behind show
+   through, while its own border, caret and native scrollbar stay visible. The
+   caret is forced to a visible colour for when the text is turned transparent. */
 .secret-box .textarea {
-  padding-right: 2.75rem;
+  position: relative;
+  z-index: 1;
+  background-color: transparent;
+  caret-color: var(--color-base-content);
+  /* Firefox: a themed, always-present scrollbar. Width stays default so the
+     reserved gutter keeps matching the dots layer. */
+  scrollbar-color: color-mix(in oklab, var(--color-base-content) 40%, transparent) transparent;
 }
-/* Mask the composed secret like a password field. `-webkit-text-security`
-   covers every browser this app targets (iOS Safari, Chrome/Edge, desktop
-   Safari); the value still lives only in memory — this is anti-shoulder-surf. */
-.textarea.masked {
-  -webkit-text-security: disc;
+/* Masked: real characters go invisible (editing/caret/IME stay native) so the
+   overlay's dots are all that shows. */
+.secret-box .textarea.masked {
+  color: transparent;
+}
+/* The empty-field hint must survive the transparent text colour. */
+.secret-box .textarea.masked::placeholder {
+  color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+}
+/* Dots layer: sits BEHIND the textarea (which has a transparent background), so
+   the textarea's native scrollbar is never occluded. Exact-fit and inert; a
+   transparent 1.5px border mirrors the textarea's border so the two text insets
+   coincide. scrollTop is mirrored from the textarea in JS. */
+.secret-box .dots {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border: 1.5px solid transparent;
+  color: var(--color-base-content);
+  background: transparent;
+}
+/* Stay above the textarea so the eye stays clickable. */
+.secret-box .secret-toggle {
+  z-index: 2;
 }
 .secret-toggle {
   position: absolute;
