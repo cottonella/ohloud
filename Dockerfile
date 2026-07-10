@@ -6,7 +6,7 @@
 # musl trips Rollup/esbuild's platform-specific binary resolution. This stage is
 # discarded anyway — only the tiny nginx image below ships.
 # Keep in lockstep with package.json "engines.node" (the workflows read that).
-FROM node:24-slim AS build
+FROM node:25-slim AS build
 WORKDIR /app
 
 # Install against the lockfile first (this layer is cached until deps change).
