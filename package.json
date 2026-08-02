@@ -37,18 +37,18 @@
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/cli": "^2",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^24.13.2",
+    "@types/node": "^24.13.3",
     "@vite-pwa/nuxt": "^1.1.1",
     "canvas-confetti": "^1.9.4",
-    "daisyui": "5.7.4",
+    "daisyui": "5.7.11",
     "eslint": "10.8.0",
     "eslint-plugin-format": "2.0.1",
     "fflate": "^0.8.3",
-    "nuxt": "4.5.0",
+    "nuxt": "4.5.1",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.1",
     "vitest": "^4.1.10",
     "vue": "latest",
-    "vue-tsc": "^3.3.8"
+    "vue-tsc": "^3.3.9"
   }
 }
