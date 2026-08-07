@@ -37,7 +37,7 @@
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/cli": "^2",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^24.13.3",
+    "@types/node": "^25.9.5",
     "@vite-pwa/nuxt": "^1.1.1",
     "canvas-confetti": "^1.9.4",
     "daisyui": "5.7.11",
