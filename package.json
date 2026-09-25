@@ -47,7 +47,7 @@
     "nuxt": "4.5.2",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.13",
-    "vitest": "^4.1.11",
+    "vitest": "^5.0.0",
     "vue": "latest",
     "vue-tsc": "^3.3.11"
   }
