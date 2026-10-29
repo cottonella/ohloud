@@ -27,7 +27,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "@trpc/client": "11.19.0",
     "@trpc/server": "11.19.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@antfu/eslint-config": "9.5.1",
@@ -37,18 +37,18 @@
     "@tailwindcss/vite": "4.3.3",
     "@tauri-apps/cli": "^2",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^24.19.1",
+    "@types/node": "^24.19.2",
     "@vite-pwa/nuxt": "^1.1.1",
     "canvas-confetti": "^1.9.4",
-    "daisyui": "5.7.47",
-    "eslint": "10.11.0",
+    "daisyui": "5.7.50",
+    "eslint": "10.12.0",
     "eslint-plugin-format": "2.0.1",
     "fflate": "^0.8.3",
-    "nuxt": "4.5.2",
+    "nuxt": "4.6.1",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.5",
     "vue": "latest",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.13"
   }
 }
