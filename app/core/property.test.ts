@@ -42,7 +42,17 @@ describe('property — random payloads round-trip', () => {
 
   it('seals and opens random Unicode text (crypto + container)', () => {
     const r = rng(0x9999)
-    const words = ['hello', '🧸', 'secret', 'meet@6', 'vault', 'ключ', '世界', 'café', '🐢🐇']
+    const words = [
+      'hello',
+      '🧸',
+      'secret',
+      'meet@6',
+      'vault',
+      'ключ',
+      '世界',
+      'café',
+      '🐢🐇',
+    ]
     for (let t = 0; t < 15; t++) {
       const msg = Array.from({ length: r() % 24 }, () => words[r() % words.length]).join(' ')
       const pw = `k${r()}`
@@ -57,7 +67,9 @@ describe('property — random payloads round-trip', () => {
     for (let t = 0; t < 30; t++) {
       const blob = randBytes(1 + (r() % 2000), r)
       const { data, meta } = fecEncode(blob, { repair: 0.25 })
-      expect([...fecDecode(data, meta)]).toEqual([...blob])
+      expect([
+        ...fecDecode(data, meta),
+      ]).toEqual([...blob])
     }
   })
 })

@@ -28,7 +28,9 @@ const filterId = `ohloud-pixelate-${filterSeq++}`
 // Coarse blocks that shrink to nothing as we resolve to crisp text.
 const pixel = computed(() => PIXEL_MAX * (1 - prog.value))
 const cell = computed(() => Math.max(1, pixel.value))
-const textFilter = computed(() => (pixel.value > 1.1 ? `url(#${filterId})` : 'none'))
+const textFilter = computed(() => (pixel.value > 1.1
+  ? `url(#${filterId})`
+  : 'none'))
 // The opaque cover fades over the first half, so the pixels underneath are only
 // visible mid-transition — never while hidden.
 const overlayOpacity = computed(() => Math.min(1, Math.max(0, (0.5 - prog.value) / 0.5)))
@@ -55,7 +57,9 @@ function animateProg(to: number, duration = 850) {
   const start = performance.now()
   const step = (now: number) => {
     const t = Math.min(1, (now - start) / duration)
-    const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+    const eased = t < 0.5
+      ? 4 * t * t * t
+      : 1 - (-2 * t + 2) ** 3 / 2
     prog.value = from + (to - from) * eased
     if (t < 1)
       pixelRaf = requestAnimationFrame(step)
@@ -116,7 +120,9 @@ async function listen() {
       },
       onLevel: l => (micLevel.value = l),
       onSync: () => (stage.value = 'receiving'),
-      onProgress: (r, t) => (recvProgress.value = t > 0 ? r / t : 0),
+      onProgress: (r, t) => (recvProgress.value = t > 0
+        ? r / t
+        : 0),
       onComplete: (frame, sampleRate) => {
         captured = { pcm: frame, sampleRate }
         stage.value = 'captured'
@@ -208,7 +214,9 @@ function sanitizeFilename(raw: string): string {
   return out.slice(0, 200) || 'download'
 }
 
-const safeFilename = computed(() => (result.value ? sanitizeFilename(result.value.filename) : ''))
+const safeFilename = computed(() => (result.value
+  ? sanitizeFilename(result.value.filename)
+  : ''))
 
 async function downloadFile() {
   if (!result.value || result.value.isText)
@@ -218,12 +226,17 @@ async function downloadFile() {
   if (isTauri()) {
     // Browser downloads do nothing in a Tauri webview — hand the bytes to the
     // native save command, which prompts with the OS "Save As" dialog.
-    await invoke('save_file', { name: safeFilename.value, contents: Array.from(bytes) })
+    await invoke('save_file', {
+      name: safeFilename.value,
+      contents: Array.from(bytes),
+    })
     return
   }
   // .slice() re-homes the bytes onto a plain ArrayBuffer — BlobPart rejects
   // views typed over ArrayBufferLike (they could wrap a SharedArrayBuffer).
-  const url = URL.createObjectURL(new Blob([bytes.slice()]))
+  const url = URL.createObjectURL(new Blob([
+    bytes.slice(),
+  ]))
   const a = document.createElement('a')
   a.href = url
   a.download = safeFilename.value

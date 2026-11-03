@@ -58,7 +58,15 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
   it('round-trips a file with RaptorQ repair through reverb (fountain on for files)', () => {
     const content = new Uint8Array(1800).map((_, i) => (i * 41 + 7) & 0xFF)
     const { pcm } = encodeFile('vault.bin', content, PW, { kdf: FAST }) // repair 0.25 by default
-    const heard = simulateChannel(pcm, { snrDb: 16, reverb: 0.3, reverbDecaySec: 0.45, bandLow: 300, bandHigh: 12000, sampleRate: 48000, seed: 11 })
+    const heard = simulateChannel(pcm, {
+      snrDb: 16,
+      reverb: 0.3,
+      reverbDecaySec: 0.45,
+      bandLow: 300,
+      bandHigh: 12000,
+      sampleRate: 48000,
+      seed: 11,
+    })
     const out = decodePcm(heard, PW, { maxSearchSamples: 1 << 16 })
     expect(out.isText).toBe(false)
     expect([...out.content]).toEqual([...content])
@@ -91,7 +99,15 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
     // realistic "normal room": 20 dB SNR, 0.25 reverb / 0.4 s decay, band-limited.
     const msg = 'reverb-proof secret 🐇 — the quick brown fox 0123456789'
     const { pcm } = encodeText(msg, PW, { kdf: FAST, mode: 'fast' })
-    const heard = simulateChannel(pcm, { snrDb: 20, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000, sampleRate: 48000, seed: 42 })
+    const heard = simulateChannel(pcm, {
+      snrDb: 20,
+      reverb: 0.25,
+      reverbDecaySec: 0.4,
+      bandLow: 300,
+      bandHigh: 12000,
+      sampleRate: 48000,
+      seed: 42,
+    })
     const out = decodePcm(heard, PW, { maxSearchSamples: 1 << 16 })
     expect(out.text).toBe(msg)
   })
@@ -104,7 +120,15 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
     // timing sync. This band-limits hard just above the OFDM band to exercise it.
     const msg = 'band-limited speaker secret 🐇 0123456789'
     const { pcm } = encodeText(msg, PW, { kdf: FAST, mode: 'fast' })
-    const heard = simulateChannel(pcm, { snrDb: 22, reverb: 0.2, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 7000, sampleRate: 48000, seed: 5 })
+    const heard = simulateChannel(pcm, {
+      snrDb: 22,
+      reverb: 0.2,
+      reverbDecaySec: 0.35,
+      bandLow: 300,
+      bandHigh: 7000,
+      sampleRate: 48000,
+      seed: 5,
+    })
     const out = decodePcm(heard, PW, { maxSearchSamples: 1 << 16 })
     expect(out.text).toBe(msg)
   })
@@ -160,7 +184,13 @@ describe('end-to-end pipeline (encode → channel → decode)', () => {
   it('decodes + decrypts + verifies text and a file across several SNRs', () => {
     const msg = 'multi-SNR secret 🧸 vault 4815162342'
     const content = new Uint8Array(300).map((_, i) => (i * 17 + 3) & 0xFF)
-    const ch = { reverb: 0.2, reverbDecaySec: 0.35, bandLow: 300, bandHigh: 12000, sampleRate: 48000 }
+    const ch = {
+      reverb: 0.2,
+      reverbDecaySec: 0.35,
+      bandLow: 300,
+      bandHigh: 12000,
+      sampleRate: 48000,
+    }
     for (const snrDb of [28, 18, 10]) {
       const t = decodePcm(simulateChannel(encodeText(msg, PW, { kdf: FAST }).pcm, { ...ch, snrDb, seed: snrDb }), PW, { maxSearchSamples: 1 << 16 })
       expect(t.text).toBe(msg)

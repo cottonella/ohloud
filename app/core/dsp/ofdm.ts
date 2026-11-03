@@ -59,7 +59,11 @@ export function ofdmConfig(constellation: Constellation, bandHighHz: number = OF
 }
 
 export function bitsPerSubcarrier(c: Constellation): number {
-  return c === 'qpsk' ? 2 : c === 'qam16' ? 4 : 6
+  return c === 'qpsk'
+    ? 2
+    : c === 'qam16'
+      ? 4
+      : 6
 }
 
 function layout(cfg: OfdmConfig): { data: number[], pilots: number[] } {
@@ -131,7 +135,9 @@ class BitReader {
     let v = 0
     for (let i = 0; i < n; i++) {
       const byteIdx = this.pos >> 3
-      const bit = byteIdx < this.bytes.length ? (this.bytes[byteIdx]! >> (7 - (this.pos & 7))) & 1 : 0
+      const bit = byteIdx < this.bytes.length
+        ? (this.bytes[byteIdx]! >> (7 - (this.pos & 7))) & 1
+        : 0
       v = (v << 1) | bit
       this.pos++
     }
@@ -204,7 +210,9 @@ export function modulateOfdm(data: Uint8Array, cfg: OfdmConfig): Float32Array {
   let power = 0
   for (let i = 0; i < out.length; i++)
     power += out[i]! * out[i]!
-  const clipK = cfg.constellation === 'qam64' ? 6 : 4
+  const clipK = cfg.constellation === 'qam64'
+    ? 6
+    : 4
   const clipCeil = clipK * Math.sqrt(power / out.length)
   let peak = 0
   for (let i = 0; i < out.length; i++) {
@@ -233,7 +241,14 @@ function interpTable(dataBins: number[], pilots: number[]): Interp[] {
         break
       }
     }
-    return { d, p1, p2, w: p2 === p1 ? 0 : (d - p1) / (p2 - p1) }
+    return {
+      d,
+      p1,
+      p2,
+      w: p2 === p1
+        ? 0
+        : (d - p1) / (p2 - p1),
+    }
   })
 }
 
@@ -424,5 +439,7 @@ export function demodulateOfdm(pcm: Float32Array, byteLength: number | undefined
   }
 
   const bytes = writer.toBytes()
-  return byteLength === undefined ? bytes : bytes.subarray(0, byteLength)
+  return byteLength === undefined
+    ? bytes
+    : bytes.subarray(0, byteLength)
 }

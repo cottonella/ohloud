@@ -17,9 +17,27 @@ const PW = 'correct horse battery staple'
 const SR = 48000
 
 // Room presets from the §16 calibration (see bench/run.ts).
-const QUIET = { snrDb: 30, reverb: 0.15, reverbDecaySec: 0.3, bandLow: 200, bandHigh: 15000 }
-const NORMAL = { snrDb: 20, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 }
-const NOISY = { snrDb: 12, reverb: 0.35, reverbDecaySec: 0.45, bandLow: 400, bandHigh: 10000 }
+const QUIET = {
+  snrDb: 30,
+  reverb: 0.15,
+  reverbDecaySec: 0.3,
+  bandLow: 200,
+  bandHigh: 15000,
+}
+const NORMAL = {
+  snrDb: 20,
+  reverb: 0.25,
+  reverbDecaySec: 0.4,
+  bandLow: 300,
+  bandHigh: 12000,
+}
+const NOISY = {
+  snrDb: 12,
+  reverb: 0.35,
+  reverbDecaySec: 0.45,
+  bandLow: 400,
+  bandHigh: 10000,
+}
 
 function roundTrip(mode: 'robust' | 'fast' | 'turbo', bytes: number, room: object, seed: number): boolean {
   const content = randomBytes(bytes, seed)

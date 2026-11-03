@@ -25,15 +25,32 @@ describe('acoustic robustness (simulated channel)', () => {
   })
 
   it('survives a normal room (20 dB SNR, reverb, band-limited)', () => {
-    expect(decodeCount({ snrDb: 20, reverb: 0.25, reverbDecaySec: 0.4, bandLow: 300, bandHigh: 12000 })).toBe(4)
+    expect(decodeCount({
+      snrDb: 20,
+      reverb: 0.25,
+      reverbDecaySec: 0.4,
+      bandLow: 300,
+      bandHigh: 12000,
+    })).toBe(4)
   })
 
   it('survives a noisy room (12 dB SNR, heavier reverb)', () => {
-    expect(decodeCount({ snrDb: 12, reverb: 0.35, reverbDecaySec: 0.45, bandLow: 400, bandHigh: 10000 })).toBe(4)
+    expect(decodeCount({
+      snrDb: 12,
+      reverb: 0.35,
+      reverbDecaySec: 0.45,
+      bandLow: 400,
+      bandHigh: 10000,
+    })).toBe(4)
   })
 
   it('tolerates a lowpass cutting into the MFSK band (3-4 kHz)', () => {
-    expect(decodeCount({ snrDb: 15, reverb: 0.2, bandLow: 300, bandHigh: 4000 })).toBe(4)
+    expect(decodeCount({
+      snrDb: 15,
+      reverb: 0.2,
+      bandLow: 300,
+      bandHigh: 4000,
+    })).toBe(4)
   })
 
   it('fails gracefully under hopeless noise (null, never a wrong result)', () => {

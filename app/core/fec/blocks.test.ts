@@ -11,7 +11,10 @@ function seq(n: number, start = 0): Uint8Array {
 
 describe('interleave', () => {
   it('round-trips and transposes', () => {
-    const blocks = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])]
+    const blocks = [
+      new Uint8Array([1, 2, 3]),
+      new Uint8Array([4, 5, 6]),
+    ]
     const woven = interleave(blocks)
     expect([...woven]).toEqual([1, 4, 2, 5, 3, 6])
     const back = deinterleave(woven, 2)
@@ -25,14 +28,18 @@ describe('fEC block codec', () => {
     const blob = seq(2000, 3)
     const { data, meta } = fecEncode(blob)
     expect(meta.origLen).toBe(2000)
-    expect([...fecDecode(data, meta)]).toEqual([...blob])
+    expect([
+      ...fecDecode(data, meta),
+    ]).toEqual([...blob])
   })
 
   it('handles a single short block', () => {
     const blob = seq(10)
     const { data, meta } = fecEncode(blob)
     expect(meta.blockCount).toBe(1)
-    expect([...fecDecode(data, meta)]).toEqual([...blob])
+    expect([
+      ...fecDecode(data, meta),
+    ]).toEqual([...blob])
   })
 
   it('handles an empty blob', () => {
@@ -47,7 +54,9 @@ describe('fEC block codec', () => {
     const burst = 20 * meta.blockCount // safely within per-block correction power
     for (let i = 500; i < 500 + burst; i++)
       data[i] = data[i]! ^ 0xFF
-    expect([...fecDecode(data, meta)]).toEqual([...blob])
+    expect([
+      ...fecDecode(data, meta),
+    ]).toEqual([...blob])
   })
 
   it('reports unrecoverable blocks when a burst is too large', () => {
@@ -82,7 +91,9 @@ describe('fEC block codec', () => {
       return interleave(cw)
     }
 
-    expect([...fecDecode(wipe(spare), meta)]).toEqual([...blob]) // up to capacity heals
+    expect([
+      ...fecDecode(wipe(spare), meta),
+    ]).toEqual([...blob]) // up to capacity heals
     expect(() => fecDecode(wipe(spare + 1), meta)).toThrow(FecDecodeError) // one past fails
   })
 

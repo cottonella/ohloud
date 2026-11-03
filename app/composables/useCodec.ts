@@ -62,13 +62,33 @@ export interface DecodeReply {
 export function useCodec() {
   return {
     encodeText(text: string, passphrase: string, sampleRate = 48000, mode: TransmitMode = 'robust'): Promise<EncodeReply> {
-      return call({ type: 'encodeText', text, passphrase, sampleRate, mode, kdf: GUI_KDF })
+      return call({
+        type: 'encodeText',
+        text,
+        passphrase,
+        sampleRate,
+        mode,
+        kdf: GUI_KDF,
+      })
     },
     encodeFile(filename: string, content: Uint8Array, passphrase: string, sampleRate = 48000, mode: TransmitMode = 'robust'): Promise<EncodeReply> {
-      return call({ type: 'encodeFile', filename, content, passphrase, sampleRate, mode, kdf: GUI_KDF }, [content.buffer])
+      return call({
+        type: 'encodeFile',
+        filename,
+        content,
+        passphrase,
+        sampleRate,
+        mode,
+        kdf: GUI_KDF,
+      }, [content.buffer])
     },
     decode(pcm: Float32Array, passphrase: string, sampleRate = 48000): Promise<DecodeReply> {
-      return call({ type: 'decode', pcm, passphrase, sampleRate }, [pcm.buffer])
+      return call({
+        type: 'decode',
+        pcm,
+        passphrase,
+        sampleRate,
+      }, [pcm.buffer])
     },
   }
 }

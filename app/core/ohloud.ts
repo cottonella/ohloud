@@ -35,7 +35,11 @@ function modeByte(mode: TransmitMode): number {
   // user validated on real devices. 16-QAM wide (0x05) stays receivable but
   // UNSENT until a real capture proves the chain can carry amplitudes — see
   // bench/analyze-capture.ts.
-  return mode === 'turbo' ? MODE_OFDM_QPSK_WIDE : mode === 'fast' ? MODE_OFDM_QPSK : MODE_MFSK
+  return mode === 'turbo'
+    ? MODE_OFDM_QPSK_WIDE
+    : mode === 'fast'
+      ? MODE_OFDM_QPSK
+      : MODE_MFSK
 }
 
 /**
@@ -90,7 +94,9 @@ export function estimateDurationSec(payloadBytes: number, filenameBytes = 16, sa
   const perBlock = 255 - FEC_NSYM_BY_MODE[mode] - 2 // RS payload per block (minus the 2-byte CRC)
   const rep = repair ?? REPAIR_BY_MODE[mode]
   const sourceBlocks = Math.max(1, Math.ceil(blobLen / perBlock))
-  const blockCount = sourceBlocks + (rep ? Math.ceil(rep * sourceBlocks) : 0)
+  const blockCount = sourceBlocks + (rep
+    ? Math.ceil(rep * sourceBlocks)
+    : 0)
   const mb = modeByte(mode)
   return (chirpSamples(sampleRate) + headerSamples(sampleRate) + ofdmGuardSamples(sampleRate, mb) + payloadSamples(sampleRate, blockCount, mb)) / sampleRate
 }
@@ -108,7 +114,12 @@ function encodeBlob(blob: Uint8Array, fecNsym: number, sampleRate: number, mode:
     tailHash: tailHash(blob),
   })
   const pcm = assembleFrame(headerCoded, fecData, sampleRate, modeByte(mode))
-  return { pcm, sampleRate, durationSec: pcm.length / sampleRate, containerBytes: blob.length }
+  return {
+    pcm,
+    sampleRate,
+    durationSec: pcm.length / sampleRate,
+    containerBytes: blob.length,
+  }
 }
 
 /** Encode a UTF-8 text message into a transmittable PCM frame. */
@@ -144,7 +155,12 @@ export function decodePcm(pcm: Float32Array, passphrase: string, opts: DecodeOpt
 
   let blob: Uint8Array
   try {
-    blob = fecDecode(fecData, { origLen: header.blobLen, blockCount: header.blockCount, nsym: header.fecNsym, fountain: header.fec === FEC_RS_FOUNTAIN })
+    blob = fecDecode(fecData, {
+      origLen: header.blobLen,
+      blockCount: header.blockCount,
+      nsym: header.fecNsym,
+      fountain: header.fec === FEC_RS_FOUNTAIN,
+    })
   }
   catch (e) {
     if (e instanceof FecDecodeError)

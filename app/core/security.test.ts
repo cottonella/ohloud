@@ -39,7 +39,16 @@ describe('argon2id param bounds (pre-auth memory-bomb defense)', () => {
 })
 
 describe('wire header bounds (hostile descriptor defense)', () => {
-  const base = { protoVer: WIRE_VERSION, mode: MODE_MFSK, fec: FEC_RS, flags: 0, blobLen: 100, blockCount: 1, fecNsym: 64, tailHash: new Uint8Array(16) }
+  const base = {
+    protoVer: WIRE_VERSION,
+    mode: MODE_MFSK,
+    fec: FEC_RS,
+    flags: 0,
+    blobLen: 100,
+    blockCount: 1,
+    fecNsym: 64,
+    tailHash: new Uint8Array(16),
+  }
 
   it('rejects fecNsym that leaves no per-block payload (per <= 0)', () => {
     expect(() => decodeWireHeader(encodeWireHeader({ ...base, fecNsym: 254 }))).toThrow(CorruptedError)
@@ -60,7 +69,12 @@ describe('wire header bounds (hostile descriptor defense)', () => {
 
 describe('fec decode guard', () => {
   it('throws a recoverable FecDecodeError (not an uncaught RangeError) on per <= 0', () => {
-    expect(() => fecDecode(new Uint8Array(255), { origLen: 10, blockCount: 1, nsym: 254, fountain: false }))
+    expect(() => fecDecode(new Uint8Array(255), {
+      origLen: 10,
+      blockCount: 1,
+      nsym: 254,
+      fountain: false,
+    }))
       .toThrow(FecDecodeError)
   })
 })

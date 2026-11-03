@@ -39,7 +39,9 @@ describe('reed–Solomon encode/decode', () => {
     const data = randomData(100, 1)
     const code = rsEncode(data, NSYM)
     expect(code.length).toBe(132)
-    expect([...rsDecode(code, NSYM)]).toEqual([...data])
+    expect([
+      ...rsDecode(code, NSYM),
+    ]).toEqual([...data])
   })
 
   it('corrects up to nsym/2 random errors', () => {
@@ -52,7 +54,9 @@ describe('reed–Solomon encode/decode', () => {
       positions.add(corrupt() % code.length)
     for (const p of positions)
       code[p] = code[p]! ^ (1 + (corrupt() & 0x7F))
-    expect([...rsDecode(code, NSYM)]).toEqual([...data])
+    expect([
+      ...rsDecode(code, NSYM),
+    ]).toEqual([...data])
   })
 
   it('corrects up to nsym erasures', () => {
@@ -63,8 +67,12 @@ describe('reed–Solomon encode/decode', () => {
       erasePos.push(i * 3 % code.length)
       code[i * 3 % code.length] = 0xFF
     }
-    const unique = [...new Set(erasePos)]
-    expect([...rsDecode(code, NSYM, unique)]).toEqual([...data])
+    const unique = [
+      ...new Set(erasePos),
+    ]
+    expect([
+      ...rsDecode(code, NSYM, unique),
+    ]).toEqual([...data])
   })
 
   it('corrects a mix (2·errors + erasures ≤ nsym)', () => {
@@ -74,9 +82,22 @@ describe('reed–Solomon encode/decode', () => {
     const erase = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45]
     for (const p of erase)
       code[p] = 0x00
-    for (const p of [60, 65, 70, 75, 80, 85, 90, 95, 100, 105])
+    for (const p of [
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+    ])
       code[p] = code[p]! ^ 0x5A
-    expect([...rsDecode(code, NSYM, erase)]).toEqual([...data])
+    expect([
+      ...rsDecode(code, NSYM, erase),
+    ]).toEqual([...data])
   })
 
   it('throws when there are too many errors', () => {

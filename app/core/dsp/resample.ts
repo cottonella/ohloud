@@ -44,7 +44,9 @@ export function resample(input: Float32Array, fromRate: number, toRate: number, 
       sum += input[k]! * w
       norm += w
     }
-    out[n] = norm > 0 ? sum / norm : 0
+    out[n] = norm > 0
+      ? sum / norm
+      : 0
   }
   return out
 }

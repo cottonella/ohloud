@@ -20,8 +20,12 @@ describe('kdf (Argon2id)', () => {
     const s1 = new Uint8Array(16).fill(1)
     const s2 = new Uint8Array(16).fill(2)
     const base = deriveMasterKey('pw', s1, FAST)
-    expect([...deriveMasterKey('pw', s2, FAST)]).not.toEqual([...base])
-    expect([...deriveMasterKey('pw2', s1, FAST)]).not.toEqual([...base])
+    expect([
+      ...deriveMasterKey('pw', s2, FAST),
+    ]).not.toEqual([...base])
+    expect([
+      ...deriveMasterKey('pw2', s1, FAST),
+    ]).not.toEqual([...base])
   })
 
   it('normalizes the passphrase to NFC', () => {
@@ -36,12 +40,20 @@ describe('kdf (Argon2id)', () => {
 describe('hkdf domain separation', () => {
   it('produces different keys for commit vs enc', () => {
     const mk = randomBytes(32)
-    expect([...deriveCommitment(mk)]).not.toEqual([...deriveEncKey(mk)])
+    expect([
+      ...deriveCommitment(mk),
+    ]).not.toEqual([
+      ...deriveEncKey(mk),
+    ])
   })
 
   it('different info labels diverge', () => {
     const mk = randomBytes(32)
-    expect([...hkdfSha256(mk, 'a')]).not.toEqual([...hkdfSha256(mk, 'b')])
+    expect([
+      ...hkdfSha256(mk, 'a'),
+    ]).not.toEqual([
+      ...hkdfSha256(mk, 'b'),
+    ])
   })
 })
 
@@ -62,7 +74,9 @@ describe('authenticated encryption', () => {
     const msg = utf8ToBytes('top secret')
     const ct = aeadSeal(key, nonce, aad, msg)
     expect(ct.length).toBe(msg.length + 16)
-    expect([...aeadOpen(key, nonce, aad, ct)]).toEqual([...msg])
+    expect([
+      ...aeadOpen(key, nonce, aad, ct),
+    ]).toEqual([...msg])
   })
 
   it('fails on wrong AAD', () => {

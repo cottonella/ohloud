@@ -50,13 +50,18 @@ function reverb(pcm: Float32Array, sampleRate: number, decaySec: number, mix: nu
       const y = pcm[i]! + g * buf[idx]!
       buf[idx] = y
       wet[i] = wet[i]! + y
-      idx = idx + 1 === d ? 0 : idx + 1
+      idx = idx + 1 === d
+        ? 0
+        : idx + 1
     }
   }
   for (let i = 0; i < wet.length; i++)
     wet[i] = wet[i]! / combDelays.length
 
-  for (const [ds, g] of [[0.005, 0.7], [0.0017, 0.7]] as const) {
+  for (const [ds, g] of [
+    [0.005, 0.7],
+    [0.0017, 0.7],
+  ] as const) {
     const d = Math.max(1, Math.floor(ds * sampleRate))
     const buf = new Float32Array(d)
     let idx = 0
@@ -65,7 +70,9 @@ function reverb(pcm: Float32Array, sampleRate: number, decaySec: number, mix: nu
       const y = -g * wet[i]! + bufv
       buf[idx] = wet[i]! + g * y
       wet[i] = y
-      idx = idx + 1 === d ? 0 : idx + 1
+      idx = idx + 1 === d
+        ? 0
+        : idx + 1
     }
   }
 

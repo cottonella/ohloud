@@ -52,7 +52,9 @@ let canceled = false
 let abortAudio: AbortController | null = null
 let retryAudio: (() => void) | null = null
 
-const hasInput = computed(() => (mode.value === 'text' ? text.value.length > 0 : file.value !== null))
+const hasInput = computed(() => (mode.value === 'text'
+  ? text.value.length > 0
+  : file.value !== null))
 
 // A quiet 500 ms cushion on each side of the transmission: the startup jingle
 // can't bleed into the payload, and the completion blip can't bleed into a
@@ -67,16 +69,42 @@ const estimate = computed(() => {
     const bytes = new TextEncoder().encode(text.value).length
     return estimateDurationSec(bytes, 17, 48000, speed.value) + j
   }
-  return file.value ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value) + j : 0
+  return file.value
+    ? estimateDurationSec(file.value.size, file.value.name.length, 48000, speed.value) + j
+    : 0
 })
 
 // Drives the description card under the speed selector: mascot, one-word tag,
 // a professional blurb, and a speed/sturdiness meter (each out of 3). Accents
 // are the mascots' candy stroke colors (ICON-THEME.md).
 const SPEED_INFO = {
-  robust: { icon: 'turtle', name: 'Robust', tag: 'Surest', accent: '#37B27C', speed: 1, sturdy: 3, blurb: 'Slow but sure — any device, any noise.' },
-  fast: { icon: 'rabbit', name: 'Fast', tag: 'Everyday', accent: '#E877AA', speed: 2, sturdy: 2, blurb: 'Speedy without needing a perfect room.' },
-  turbo: { icon: 'rocket', name: 'Turbo', tag: 'Fastest', accent: '#5AA9F0', speed: 3, sturdy: 1, blurb: 'Top speed when it\'s quiet and devices are close.' },
+  robust: {
+    icon: 'turtle',
+    name: 'Robust',
+    tag: 'Surest',
+    accent: '#37B27C',
+    speed: 1,
+    sturdy: 3,
+    blurb: 'Slow but sure — any device, any noise.',
+  },
+  fast: {
+    icon: 'rabbit',
+    name: 'Fast',
+    tag: 'Everyday',
+    accent: '#E877AA',
+    speed: 2,
+    sturdy: 2,
+    blurb: 'Speedy without needing a perfect room.',
+  },
+  turbo: {
+    icon: 'rocket',
+    name: 'Turbo',
+    tag: 'Fastest',
+    accent: '#5AA9F0',
+    speed: 3,
+    sturdy: 1,
+    blurb: 'Top speed when it\'s quiet and devices are close.',
+  },
 } as const
 const speedInfo = computed(() => SPEED_INFO[speed.value])
 
@@ -85,7 +113,9 @@ const speedInfo = computed(() => SPEED_INFO[speed.value])
 const SPEED_ORDER = { robust: 0, fast: 1, turbo: 2 }
 const slideSign = ref(1)
 watch(speed, (next, prev) => {
-  slideSign.value = SPEED_ORDER[next] >= SPEED_ORDER[prev] ? 1 : -1
+  slideSign.value = SPEED_ORDER[next] >= SPEED_ORDER[prev]
+    ? 1
+    : -1
 })
 
 const estimateLabel = computed(() => {
@@ -271,7 +301,9 @@ function measureBase() {
   const lc = getComputedStyle(labelIn)
   const tabPadX = (Number.parseFloat(tc.paddingLeft) || 0) + (Number.parseFloat(tc.paddingRight) || 0)
   collapsedLabelW = (Number.parseFloat(lc.paddingLeft) || 0) + (Number.parseFloat(lc.paddingRight) || 0)
-  const iconW = icon ? icon.getBoundingClientRect().width : 30
+  const iconW = icon
+    ? icon.getBoundingClientRect().width
+    : 30
   collapsedW = iconW + tabPadX + collapsedLabelW
   const cs = getComputedStyle(root)
   gapPx = Number.parseFloat(cs.columnGap || cs.gap || '0') || 0

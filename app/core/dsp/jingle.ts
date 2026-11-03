@@ -16,7 +16,11 @@ const MELODY: [number, number][] = [
   [1046.50, 0.40], // C6
 ]
 // Percussive bell partials (fundamental + two bright overtones) and envelope.
-const PARTIALS: [number, number][] = [[1, 0.6], [4, 0.24], [8, 0.08]]
+const PARTIALS: [number, number][] = [
+  [1, 0.6],
+  [4, 0.24],
+  [8, 0.08],
+]
 const ATTACK_SEC = 0.006
 const DECAY_SEC = 0.16
 const RING_SEC = 0.4 // how long each note keeps sounding

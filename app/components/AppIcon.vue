@@ -59,7 +59,9 @@ const ICONS: Record<string, string> = {
 }
 
 const inner = computed(() => ICONS[props.name] ?? '')
-const dim = computed(() => (typeof props.size === 'number' ? `${props.size}px` : props.size))
+const dim = computed(() => (typeof props.size === 'number'
+  ? `${props.size}px`
+  : props.size))
 </script>
 
 <template>

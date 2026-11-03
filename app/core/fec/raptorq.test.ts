@@ -27,7 +27,10 @@ describe('raptorQ-family fountain', () => {
       const t = 48
       const src = source(k, t, 100 + k)
       const enc = raptorEncoder(src, t)
-      const recv = Array.from({ length: k }, (_, esi) => ({ esi, data: enc.symbol(esi) }))
+      const recv = Array.from({ length: k }, (_, esi) => ({
+        esi,
+        data: enc.symbol(esi),
+      }))
       expect(same(raptorDecode(recv, k, t), src)).toBe(true)
     }
   })
@@ -40,7 +43,10 @@ describe('raptorQ-family fountain', () => {
     // Drop the first 12 encoding symbols; keep K+2 of the rest.
     const recv = Array.from({ length: k + 2 }, (_, i) => {
       const esi = i + 12
-      return { esi, data: enc.symbol(esi) }
+      return {
+        esi,
+        data: enc.symbol(esi),
+      }
     })
     expect(same(raptorDecode(recv, k, t), src)).toBe(true)
   })
@@ -52,8 +58,12 @@ describe('raptorQ-family fountain', () => {
     const enc = raptorEncoder(src, t)
     // Keep every other ESI out of a pool of 2K+8 — plenty, but non-contiguous.
     const recv: { esi: number, data: Uint8Array }[] = []
-    for (let esi = 1; recv.length < k + 2 && esi < 2 * k + 8; esi += 2)
-      recv.push({ esi, data: enc.symbol(esi) })
+    for (let esi = 1; recv.length < k + 2 && esi < 2 * k + 8; esi += 2) {
+      recv.push({
+        esi,
+        data: enc.symbol(esi),
+      })
+    }
     expect(same(raptorDecode(recv, k, t), src)).toBe(true)
   })
 
@@ -61,7 +71,10 @@ describe('raptorQ-family fountain', () => {
     const k = 20
     const t = 32
     const enc = raptorEncoder(source(k, t, 3), t)
-    const recv = Array.from({ length: k - 1 }, (_, esi) => ({ esi, data: enc.symbol(esi) }))
+    const recv = Array.from({ length: k - 1 }, (_, esi) => ({
+      esi,
+      data: enc.symbol(esi),
+    }))
     expect(raptorDecode(recv, k, t)).toBeNull()
   })
 })

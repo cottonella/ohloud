@@ -25,7 +25,9 @@ function transform(re: Float64Array, im: Float64Array, inverse: boolean): void {
   }
 
   for (let len = 2; len <= n; len <<= 1) {
-    const ang = (inverse ? 2 : -2) * Math.PI / len
+    const ang = (inverse
+      ? 2
+      : -2) * Math.PI / len
     const wr = Math.cos(ang)
     const wi = Math.sin(ang)
     for (let i = 0; i < n; i += len) {

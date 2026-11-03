@@ -72,11 +72,15 @@ function mountainTile(fill: string, cap: string, seed: number, peaks: number, ma
   const seg = W / peaks
   const edgeY = H - maxH * 0.34
 
-  const ridge: { x: number, y: number, ph: number }[] = [{ x: 0, y: edgeY, ph: 0 }]
+  const ridge: { x: number, y: number, ph: number }[] = [
+    { x: 0, y: edgeY, ph: 0 },
+  ]
   for (let i = 0; i < peaks; i++) {
     const ph = 0.5 + rnd() * 0.5
     ridge.push({ x: i * seg + seg * (0.3 + rnd() * 0.4), y: H - maxH * ph, ph })
-    const vy = i === peaks - 1 ? edgeY : H - maxH * (0.12 + rnd() * 0.2)
+    const vy = i === peaks - 1
+      ? edgeY
+      : H - maxH * (0.12 + rnd() * 0.2)
     ridge.push({ x: (i + 1) * seg, y: vy, ph: 0 })
   }
 
@@ -104,7 +108,9 @@ function mountainTile(fill: string, cap: string, seed: number, peaks: number, ma
     for (let t = 1; t < steps; t++) {
       const fr = t / steps
       const x = blx + (brx - blx) * fr
-      const y = bly + (bry - bly) * fr + (t % 2 === 0 ? drop * 0.3 : -drop * 0.14)
+      const y = bly + (bry - bly) * fr + (t % 2 === 0
+        ? drop * 0.3
+        : -drop * 0.14)
       d += ` L${f(x)} ${f(y)}`
     }
     d += ` L${f(brx)} ${f(bry)} Z`

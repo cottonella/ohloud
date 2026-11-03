@@ -74,7 +74,9 @@ function readWav(path: string): { pcm: Float32Array, sampleRate: number } {
 // ── OFDM per-symbol instrumentation (mirrors the demod's layout rules) ──────
 function analyze(pcm48: Float32Array): void {
   const { offset, score } = locateChirp(pcm48, OFDM_RATE)
-  console.log(`chirp: offset ${offset} (${(offset / OFDM_RATE).toFixed(2)} s in), correlation ${score.toFixed(3)} ${score < 0.2 ? '← WEAK (bad sync or wrong rate?)' : ''}`)
+  console.log(`chirp: offset ${offset} (${(offset / OFDM_RATE).toFixed(2)} s in), correlation ${score.toFixed(3)} ${score < 0.2
+    ? '← WEAK (bad sync or wrong rate?)'
+    : ''}`)
 
   let header
   try {
@@ -98,8 +100,11 @@ function analyze(pcm48: Float32Array): void {
   const bits = bitsPerSubcarrier(cfg.constellation)
   const pilots: number[] = []
   const dataBins: number[] = []
-  for (let b = cfg.binLow; b <= cfg.binHigh; b++)
-    ((b - cfg.binLow) % cfg.pilotSpacing === 0 ? pilots : dataBins).push(b)
+  for (let b = cfg.binLow; b <= cfg.binHigh; b++) {
+    ((b - cfg.binLow) % cfg.pilotSpacing === 0
+      ? pilots
+      : dataBins).push(b)
+  }
   const numSyms = Math.max(1, Math.ceil((payloadBytes * 8) / (dataBins.length * bits)))
 
   console.log(`payload: ${numSyms} OFDM symbols · ${cfg.constellation} · band ${Math.round((cfg.binLow * OFDM_RATE) / cfg.fftSize)}–${Math.round((cfg.binHigh * OFDM_RATE) / cfg.fftSize)} Hz`)
@@ -135,7 +140,9 @@ function analyze(pcm48: Float32Array): void {
           break
         }
       }
-      const w = p2 === p1 ? 0 : (d - p1) / (p2 - p1)
+      const w = p2 === p1
+        ? 0
+        : (d - p1) / (p2 - p1)
       const h1 = { re: 0, im: 0 }
       const h2 = { re: 0, im: 0 }
       h1.re = re[p1]!
@@ -172,12 +179,19 @@ function analyze(pcm48: Float32Array): void {
   const gMin = Math.min(...gains)
   const gMax = Math.max(...gains)
   const swingDb = 20 * Math.log10(gMax / Math.max(1e-9, gMin))
-  console.log(`\ngain swing across payload: ${swingDb.toFixed(1)} dB ${swingDb > 3 ? '← AGC / limiter suspected (amplitude modes will fail)' : '(stable — amplitude chain looks clean)'}`)
+  console.log(`\ngain swing across payload: ${swingDb.toFixed(1)} dB ${swingDb > 3
+    ? '← AGC / limiter suspected (amplitude modes will fail)'
+    : '(stable — amplitude chain looks clean)'}`)
 
   try {
     const parsed = parseFrame(pcm48, OFDM_RATE)
     try {
-      fecDecode(parsed.fecData, { origLen: header.blobLen, blockCount: header.blockCount, nsym: header.fecNsym, fountain: header.fec === FEC_RS_FOUNTAIN })
+      fecDecode(parsed.fecData, {
+        origLen: header.blobLen,
+        blockCount: header.blockCount,
+        nsym: header.fecNsym,
+        fountain: header.fec === FEC_RS_FOUNTAIN,
+      })
       console.log('FEC: full payload recovered ✓ (a decode failure in the app would be container-level, not modem-level)')
     }
     catch {
@@ -193,5 +207,9 @@ if (!path) {
   process.exit(1)
 }
 const { pcm, sampleRate } = readWav(path)
-console.log(`${path}: ${(pcm.length / sampleRate).toFixed(1)} s @ ${sampleRate} Hz${sampleRate === OFDM_RATE ? '' : ` → resampling to ${OFDM_RATE}`}`)
-analyze(sampleRate === OFDM_RATE ? pcm : resample(pcm, sampleRate, OFDM_RATE))
+console.log(`${path}: ${(pcm.length / sampleRate).toFixed(1)} s @ ${sampleRate} Hz${sampleRate === OFDM_RATE
+  ? ''
+  : ` → resampling to ${OFDM_RATE}`}`)
+analyze(sampleRate === OFDM_RATE
+  ? pcm
+  : resample(pcm, sampleRate, OFDM_RATE))

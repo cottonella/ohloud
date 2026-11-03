@@ -54,8 +54,15 @@ export function usePwaInstall() {
     p.prompt()
     const res = await p.userChoice
     deferredPrompt.value = null
-    return res?.outcome === 'accepted' ? 'accepted' : 'dismissed'
+    return res?.outcome === 'accepted'
+      ? 'accepted'
+      : 'dismissed'
   }
 
-  return { canPrompt, isStandalone, isIOS, install }
+  return {
+    canPrompt,
+    isStandalone,
+    isIOS,
+    install,
+  }
 }

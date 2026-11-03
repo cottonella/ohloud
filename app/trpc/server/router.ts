@@ -30,7 +30,10 @@ export const appRouter = t.router({
   })),
 
   multiply: t.procedure
-    .input(z.object({ a: z.number(), b: z.number() }))
+    .input(z.object({
+      a: z.number(),
+      b: z.number(),
+    }))
     .query(({ input }) => input.a * input.b),
 
   // Round-trips to the Rust backend over Tauri IPC when running in the desktop

@@ -7,7 +7,11 @@ const BLIP: [number, number][] = [
   [1567.98, 0.12],
   [2093.0, 0.3],
 ]
-const PARTIALS: [number, number][] = [[1, 0.6], [4, 0.24], [8, 0.08]]
+const PARTIALS: [number, number][] = [
+  [1, 0.6],
+  [4, 0.24],
+  [8, 0.08],
+]
 
 let ctx: AudioContext | null = null
 let bus: AudioNode | null = null

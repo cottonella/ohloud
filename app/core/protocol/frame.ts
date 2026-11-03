@@ -28,7 +28,9 @@ const HEADER_SYMBOLS = Math.ceil(HEADER_CODED_LEN / bytesPerSymbol(DEFAULT_MFSK)
 export const OFDM_GUARD_SEC = 0.15
 
 export function ofdmGuardSamples(sampleRate: number, mode: number): number {
-  return modeIsOfdm(mode) ? Math.round(OFDM_GUARD_SEC * sampleRate) : 0
+  return modeIsOfdm(mode)
+    ? Math.round(OFDM_GUARD_SEC * sampleRate)
+    : 0
 }
 
 export function chirpSamples(sampleRate: number): number {
@@ -73,13 +75,20 @@ export function assembleFrame(headerCoded: Uint8Array, fecData: Uint8Array, samp
   const cfg: MfskConfig = mfskConfig(sampleRate)
   const chirp = synthChirp(CHIRP_F0, CHIRP_F1, chirpSamples(sampleRate), sampleRate, CHIRP_AMP)
   const header = modulateMfsk(headerCoded, cfg)
-  if (!modeIsOfdm(mode))
-    return concatFloat32([chirp, header, modulateMfsk(fecData, cfg)])
+  if (!modeIsOfdm(mode)) {
+    return concatFloat32([
+      chirp,
+      header,
+      modulateMfsk(fecData, cfg),
+    ])
+  }
 
   // Synthesize on OFDM's canonical 48 kHz grid, then resample to the device rate
   // so the whole frame shares one rate (physical tones are preserved).
   const canonical = modulateOfdm(fecData, ofdmConfig(modeConstellation(mode), modeBandHz(mode)))
-  const payload = sampleRate === OFDM_RATE ? canonical : resample(canonical, OFDM_RATE, sampleRate)
+  const payload = sampleRate === OFDM_RATE
+    ? canonical
+    : resample(canonical, OFDM_RATE, sampleRate)
   const guard = new Float32Array(ofdmGuardSamples(sampleRate, mode))
   return concatFloat32([chirp, header, guard, payload])
 }
@@ -124,7 +133,9 @@ export function parseFrame(pcm: Float32Array, sampleRate = DEFAULT_SAMPLE_RATE, 
   const cfg = mfskConfig(sampleRate)
   const cLen = chirpSamples(sampleRate)
   const hSamples = headerSamples(sampleRate)
-  const searchEnd = maxSearchSamples === undefined ? pcm.length : Math.min(pcm.length, maxSearchSamples + cLen)
+  const searchEnd = maxSearchSamples === undefined
+    ? pcm.length
+    : Math.min(pcm.length, maxSearchSamples + cLen)
   const { offset } = locateChirp(pcm, sampleRate, 0, searchEnd)
 
   const headerOff = offset + cLen

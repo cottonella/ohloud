@@ -48,17 +48,25 @@ export function modeIsKnown(mode: number): boolean {
 export function modeConstellation(mode: number): Constellation {
   return mode === MODE_OFDM_QPSK || mode === MODE_OFDM_QPSK_WIDE
     ? 'qpsk'
-    : mode === MODE_OFDM_QAM64 ? 'qam64' : 'qam16'
+    : mode === MODE_OFDM_QAM64
+      ? 'qam64'
+      : 'qam16'
 }
 
 /** Subcarrier band ceiling (Hz) carried by an OFDM mode byte. */
 export function modeBandHz(mode: number): number {
-  return mode === MODE_OFDM_QPSK_WIDE || mode === MODE_OFDM_QAM16_WIDE ? OFDM_WIDE_BAND_HZ : OFDM_BAND_HZ
+  return mode === MODE_OFDM_QPSK_WIDE || mode === MODE_OFDM_QAM16_WIDE
+    ? OFDM_WIDE_BAND_HZ
+    : OFDM_BAND_HZ
 }
 
 /** Mode byte for an OFDM constellation. */
 export function ofdmMode(c: Constellation): number {
-  return c === 'qpsk' ? MODE_OFDM_QPSK : c === 'qam64' ? MODE_OFDM_QAM64 : MODE_OFDM_QAM16
+  return c === 'qpsk'
+    ? MODE_OFDM_QPSK
+    : c === 'qam64'
+      ? MODE_OFDM_QAM64
+      : MODE_OFDM_QAM16
 }
 
 const MAGIC = new Uint8Array([0x4F, 0x57]) // "OW"
@@ -132,7 +140,16 @@ function parse(buf: Uint8Array): WireHeader {
   if (fecNsym > MAX_FEC_NSYM)
     throw new CorruptedError('wire header FEC parity out of range')
 
-  return { protoVer, mode, fec, flags, blobLen, blockCount, fecNsym, tailHash }
+  return {
+    protoVer,
+    mode,
+    fec,
+    flags,
+    blobLen,
+    blockCount,
+    fecNsym,
+    tailHash,
+  }
 }
 
 /** Serialize + Reed–Solomon encode the header to HEADER_CODED_LEN bytes. */

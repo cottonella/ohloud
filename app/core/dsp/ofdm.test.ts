@@ -44,7 +44,10 @@ describe('oFDM cyclic prefix vs multipath', () => {
     const data = seqBytes(250, 3)
     // Direct path + a realistic 0.5 ms echo (24 samples, well inside the CP and
     // the pilot-tracking range) → CP prevents ISI, pilots equalize the fading.
-    const pcm = multipath(modulateOfdm(data, cfg), [{ delaySamples: 0, gain: 1 }, { delaySamples: 24, gain: 0.5 }])
+    const pcm = multipath(modulateOfdm(data, cfg), [
+      { delaySamples: 0, gain: 1 },
+      { delaySamples: 24, gain: 0.5 },
+    ])
     expect(ber(demodulateOfdm(pcm, data.length, cfg), data)).toBeLessThan(0.005)
   })
 
@@ -52,7 +55,10 @@ describe('oFDM cyclic prefix vs multipath', () => {
     const cfg = ofdmConfig('qpsk')
     const data = seqBytes(250, 3)
     // Echo at 400 samples (> 256 CP) → inter-symbol interference.
-    const pcm = multipath(modulateOfdm(data, cfg), [{ delaySamples: 0, gain: 1 }, { delaySamples: 400, gain: 0.6 }])
+    const pcm = multipath(modulateOfdm(data, cfg), [
+      { delaySamples: 0, gain: 1 },
+      { delaySamples: 400, gain: 0.6 },
+    ])
     expect(ber(demodulateOfdm(pcm, data.length, cfg), data)).toBeGreaterThan(0)
   })
 })
@@ -61,7 +67,12 @@ describe('oFDM noise tolerance (pilots equalize band-limiting)', () => {
   it('qPSK survives 20 dB SNR + band-limiting', () => {
     const cfg = ofdmConfig('qpsk')
     const data = seqBytes(200, 1)
-    const pcm = simulateChannel(modulateOfdm(data, cfg), { snrDb: 20, bandLow: 300, bandHigh: 12000, seed: 5 })
+    const pcm = simulateChannel(modulateOfdm(data, cfg), {
+      snrDb: 20,
+      bandLow: 300,
+      bandHigh: 12000,
+      seed: 5,
+    })
     expect(ber(demodulateOfdm(pcm, data.length, cfg), data)).toBeLessThan(0.02)
   })
 })

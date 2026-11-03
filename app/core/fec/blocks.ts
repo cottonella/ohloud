@@ -46,7 +46,9 @@ export function fecEncode(blob: Uint8Array, params: FecParams = {}): { data: Uin
     throw new Error('nsym leaves no room for payload')
 
   const k = Math.max(1, Math.ceil(blob.length / per)) // source symbols/blocks
-  const repairBlocks = params.repair ? Math.ceil(params.repair * k) : 0
+  const repairBlocks = params.repair
+    ? Math.ceil(params.repair * k)
+    : 0
   const fountain = repairBlocks > 0
   const n = k + repairBlocks
   const rsK = RS_BLOCK_MAX - nsym // data bytes per RS block, incl. CRC
@@ -58,11 +60,15 @@ export function fecEncode(blob: Uint8Array, params: FecParams = {}): { data: Uin
     sym.set(blob.subarray(i * per, i * per + per))
     source.push(sym)
   }
-  const enc = fountain ? raptorEncoder(source, per) : null
+  const enc = fountain
+    ? raptorEncoder(source, per)
+    : null
 
   const codewords: Uint8Array[] = []
   for (let esi = 0; esi < n; esi++) {
-    const payload = fountain ? enc!.symbol(esi) : source[esi]!
+    const payload = fountain
+      ? enc!.symbol(esi)
+      : source[esi]!
     const blockData = new Uint8Array(rsK)
     blockData.set(payload, 0)
     const crc = crc16(payload)
@@ -71,7 +77,15 @@ export function fecEncode(blob: Uint8Array, params: FecParams = {}): { data: Uin
     codewords.push(rsEncode(blockData, nsym))
   }
 
-  return { data: interleave(codewords), meta: { origLen: blob.length, blockCount: n, nsym, fountain } }
+  return {
+    data: interleave(codewords),
+    meta: {
+      origLen: blob.length,
+      blockCount: n,
+      nsym,
+      fountain,
+    },
+  }
 }
 
 /**
@@ -113,12 +127,17 @@ export function fecDecode(data: Uint8Array, meta: FecMeta): Uint8Array {
       failed.push(i)
       continue
     }
-    survivors.push({ esi: i, data: payload.slice() })
+    survivors.push({
+      esi: i,
+      data: payload.slice(),
+    })
   }
 
   if (fountain) {
     const k = Math.max(1, Math.ceil(origLen / per))
-    const recovered = survivors.length >= k ? raptorDecode(survivors, k, per) : null
+    const recovered = survivors.length >= k
+      ? raptorDecode(survivors, k, per)
+      : null
     if (!recovered)
       throw new FecDecodeError(failed)
     const out = new Uint8Array(k * per)

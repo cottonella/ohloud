@@ -45,8 +45,20 @@ const strength = computed(() => {
   if (pw.length < 8)
     s = Math.min(s, 1) // short keys can never rank above "weak"
   s = Math.min(s, 4)
-  const labels = ['too short', 'weak', 'fair', 'good', 'strong']
-  const colors = ['var(--color-error)', 'var(--color-error)', 'var(--color-warning)', 'var(--color-success)', 'var(--color-success)']
+  const labels = [
+    'too short',
+    'weak',
+    'fair',
+    'good',
+    'strong',
+  ]
+  const colors = [
+    'var(--color-error)',
+    'var(--color-error)',
+    'var(--color-warning)',
+    'var(--color-success)',
+    'var(--color-success)',
+  ]
   return { score: s, label: labels[s]!, color: colors[s]! }
 })
 

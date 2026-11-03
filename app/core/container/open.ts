@@ -84,6 +84,8 @@ export function open(container: Uint8Array, passphrase: string): OpenResult {
     filename: record.filename,
     content: record.content,
     isText,
-    text: isText ? utf8Decode(record.content) : undefined,
+    text: isText
+      ? utf8Decode(record.content)
+      : undefined,
   }
 }

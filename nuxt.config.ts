@@ -78,7 +78,9 @@ export default defineNuxtConfig({
     '~/assets/css/main.css',
   ],
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+    ],
     optimizeDeps: {
       include: [
         '@noble/ciphers/chacha.js',
@@ -103,7 +105,11 @@ export default defineNuxtConfig({
       title: 'ohloud',
       meta: [
         // Production-only: keep Vite HMR unshackled in dev (see the const above).
-        ...(isProd ? [{ 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY }] : []),
+        ...(isProd
+          ? [
+              { 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY },
+            ]
+          : []),
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         // Installable-PWA hints — iOS needs the apple-* variants explicitly.
         { name: 'theme-color', content: '#f7eddc' },
@@ -149,7 +155,12 @@ export default defineNuxtConfig({
       icons: [
         { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
         { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        {
+          src: '/pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
       ],
     },
     workbox: {

@@ -22,20 +22,26 @@ describe('mFSK modem', () => {
   it('round-trips clean bytes (whole symbols)', () => {
     const data = seqBytes(300, 5) // multiple of 3
     const pcm = modulateMfsk(data)
-    expect([...demodulateMfsk(pcm, data.length)]).toEqual([...data])
+    expect([
+      ...demodulateMfsk(pcm, data.length),
+    ]).toEqual([...data])
   })
 
   it('pads and trims a non-multiple length', () => {
     const data = seqBytes(100, 1) // not a multiple of 3
     const pcm = modulateMfsk(data)
-    expect([...demodulateMfsk(pcm, data.length)]).toEqual([...data])
+    expect([
+      ...demodulateMfsk(pcm, data.length),
+    ]).toEqual([...data])
   })
 
   it('decodes through moderate noise', () => {
     const data = seqBytes(150, 9)
     const pcm = modulateMfsk(data)
     addNoise(pcm, 0.05, 4242)
-    expect([...demodulateMfsk(pcm, data.length)]).toEqual([...data])
+    expect([
+      ...demodulateMfsk(pcm, data.length),
+    ]).toEqual([...data])
   })
 })
 
@@ -51,6 +57,8 @@ describe('fEC + MFSK channel (no crypto)', () => {
       pcm[i] = 0
 
     const demod = demodulateMfsk(pcm, data.length)
-    expect([...fecDecode(demod, meta)]).toEqual([...blob])
+    expect([
+      ...fecDecode(demod, meta),
+    ]).toEqual([...blob])
   })
 })

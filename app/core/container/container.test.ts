@@ -52,7 +52,9 @@ describe('container round-trips', () => {
   it('1 MiB payload', () => {
     const content = pseudoRandom(1024 * 1024)
     const container = sealFile('big.bin', content, PW, { kdf: FAST })
-    expect([...open(container, PW).content]).toEqual([...content])
+    expect([
+      ...open(container, PW).content,
+    ]).toEqual([...content])
   })
 })
 

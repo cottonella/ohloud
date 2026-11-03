@@ -51,7 +51,9 @@ export function polyScale(p: Poly, x: number): Poly {
 }
 
 export function polyAdd(p: Poly, q: Poly): Poly {
-  const r = Array.from<number>({ length: Math.max(p.length, q.length) }).fill(0)
+  const r = Array.from<number>({
+    length: Math.max(p.length, q.length),
+  }).fill(0)
   for (let i = 0; i < p.length; i++)
     r[i + r.length - p.length] = p[i]!
   for (let i = 0; i < q.length; i++)
@@ -89,5 +91,8 @@ export function polyDiv(dividend: Poly, divisor: Poly): { quotient: Poly, remain
     }
   }
   const sep = out.length - (divisor.length - 1)
-  return { quotient: out.slice(0, sep), remainder: out.slice(sep) }
+  return {
+    quotient: out.slice(0, sep),
+    remainder: out.slice(sep),
+  }
 }

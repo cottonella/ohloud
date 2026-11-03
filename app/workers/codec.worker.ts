@@ -27,19 +27,38 @@ ctx.onmessage = (e: MessageEvent) => {
         ? encodeText(m.text, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf, mode: m.mode })
         : encodeFile(m.filename, m.content, m.passphrase, { sampleRate: m.sampleRate, kdf: m.kdf, mode: m.mode })
       ctx.postMessage(
-        { id: m.id, ok: true, pcm: r.pcm, sampleRate: r.sampleRate, durationSec: r.durationSec, containerBytes: r.containerBytes },
+        {
+          id: m.id,
+          ok: true,
+          pcm: r.pcm,
+          sampleRate: r.sampleRate,
+          durationSec: r.durationSec,
+          containerBytes: r.containerBytes,
+        },
         [r.pcm.buffer],
       )
     }
     else if (m.type === 'decode') {
       const r = decodePcm(m.pcm, m.passphrase, { sampleRate: m.sampleRate })
       ctx.postMessage(
-        { id: m.id, ok: true, filename: r.filename, isText: r.isText, text: r.text, content: r.content },
+        {
+          id: m.id,
+          ok: true,
+          filename: r.filename,
+          isText: r.isText,
+          text: r.text,
+          content: r.content,
+        },
         [r.content.buffer],
       )
     }
   }
   catch (err) {
-    ctx.postMessage({ id: m.id, ok: false, error: classify(err), message: (err as Error).message })
+    ctx.postMessage({
+      id: m.id,
+      ok: false,
+      error: classify(err),
+      message: (err as Error).message,
+    })
   }
 }

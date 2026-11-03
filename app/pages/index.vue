@@ -1,6 +1,19 @@
 <script setup lang="ts">
 const tab = ref<'send' | 'receive'>('send')
-const TAGLINES = ['end-to-end encrypted', 'just sound', 'no server', 'no internet', 'no account', 'no pairing', 'no setup', 'works offline', 'no cloud', 'no trace', 'no hassle', 'no download']
+const TAGLINES = [
+  'end-to-end encrypted',
+  'just sound',
+  'no server',
+  'no internet',
+  'no account',
+  'no pairing',
+  'no setup',
+  'works offline',
+  'no cloud',
+  'no trace',
+  'no hassle',
+  'no download',
+]
 const showTech = ref(false)
 const showInstall = ref(false)
 </script>

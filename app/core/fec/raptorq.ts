@@ -33,7 +33,9 @@ function makeRng(seed: number): () => number {
 // ── precode geometry ────────────────────────────────────────────────────────
 /** Number of LDPC redundancy symbols for K source symbols. */
 function ldpcCount(k: number): number {
-  return k <= 1 ? 0 : Math.max(2, Math.round(Math.sqrt(k)) + 1)
+  return k <= 1
+    ? 0
+    : Math.max(2, Math.round(Math.sqrt(k)) + 1)
 }
 
 /** Total intermediate symbols L = K source + S LDPC. */

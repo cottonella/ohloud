@@ -73,5 +73,14 @@ export function parseHeader(buf: Uint8Array): ContainerHeader {
   const nonce = rd.bytes(24)
   const ctLen = rd.u32()
 
-  return { version, suite, kdf: { memLog2, time, lanes }, flags, salt, commit, nonce, ctLen }
+  return {
+    version,
+    suite,
+    kdf: { memLog2, time, lanes },
+    flags,
+    salt,
+    commit,
+    nonce,
+    ctLen,
+  }
 }

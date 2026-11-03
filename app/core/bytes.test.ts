@@ -18,7 +18,9 @@ describe('binary reader/writer', () => {
     expect(rd.u16()).toBe(0x1234)
     expect(rd.u32()).toBe(0xDEADBEEF)
     expect(rd.u64()).toBe(5_000_000_000)
-    expect([...rd.bytes(3)]).toEqual([9, 8, 7])
+    expect([
+      ...rd.bytes(3),
+    ]).toEqual([9, 8, 7])
     expect(rd.remaining).toBe(0)
   })
 
@@ -37,7 +39,9 @@ describe('binary reader/writer', () => {
 
 describe('helpers', () => {
   it('concat joins arrays', () => {
-    expect([...concat(new Uint8Array([1]), new Uint8Array([2, 3]))]).toEqual([1, 2, 3])
+    expect([
+      ...concat(new Uint8Array([1]), new Uint8Array([2, 3])),
+    ]).toEqual([1, 2, 3])
   })
 
   it('utf8 round-trips unicode', () => {
@@ -48,7 +52,9 @@ describe('helpers', () => {
   it('hex round-trips', () => {
     const b = new Uint8Array([0x00, 0x0F, 0xFF, 0xA5])
     expect(toHex(b)).toBe('000fffa5')
-    expect([...fromHex('000fffa5')]).toEqual([...b])
+    expect([
+      ...fromHex('000fffa5'),
+    ]).toEqual([...b])
   })
 
   it('bytesEqualCT compares correctly', () => {

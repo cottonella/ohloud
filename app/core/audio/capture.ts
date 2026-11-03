@@ -62,7 +62,12 @@ export async function startListening(opts: ListenOptions = {}): Promise<ListenHa
   let stream: MediaStream
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false, channelCount: 1 },
+      audio: {
+        echoCancellation: false,
+        autoGainControl: false,
+        noiseSuppression: false,
+        channelCount: 1,
+      },
     })
   }
   catch (e) {
@@ -88,7 +93,9 @@ export async function startListening(opts: ListenOptions = {}): Promise<ListenHa
   const pumpLevel = (): void => {
     analyser.getFloatTimeDomainData(levelBuf)
     const r = rms(levelBuf)
-    display = r > display ? r : display * 0.82 + r * 0.18
+    display = r > display
+      ? r
+      : display * 0.82 + r * 0.18
     opts.onLevel?.(display)
     raf = requestAnimationFrame(pumpLevel)
   }

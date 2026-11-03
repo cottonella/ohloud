@@ -28,8 +28,12 @@ export const RS_BLOCK_MAX = 255
 
 function generatorPoly(nsym: number): Poly {
   let g: Poly = [1]
-  for (let i = 0; i < nsym; i++)
-    g = polyMul(g, [1, gfPow(2, i)])
+  for (let i = 0; i < nsym; i++) {
+    g = polyMul(g, [
+      1,
+      gfPow(2, i),
+    ])
+  }
   return g
 }
 
@@ -63,13 +67,20 @@ function calcSyndromes(msg: Poly, nsym: number): Poly {
 
 function findErrataLocator(positions: number[]): Poly {
   let loc: Poly = [1]
-  for (const p of positions)
-    loc = polyMul(loc, polyAdd([1], [gfPow(2, p), 0]))
+  for (const p of positions) {
+    loc = polyMul(loc, polyAdd([1], [
+      gfPow(2, p),
+      0,
+    ]))
+  }
   return loc
 }
 
 function findErrorEvaluator(synd: Poly, errLoc: Poly, nsym: number): Poly {
-  const divisor = [1, ...Array.from<number>({ length: nsym + 1 }).fill(0)]
+  const divisor = [
+    1,
+    ...Array.from<number>({ length: nsym + 1 }).fill(0),
+  ]
   return polyDiv(polyMul(synd, errLoc), divisor).remainder
 }
 
@@ -124,7 +135,9 @@ function findErrorLocator(synd: Poly, nsym: number, eraseCount: number): Poly {
   let errLoc: Poly = [1]
   let oldLoc: Poly = [1]
 
-  const syndShift = synd.length > nsym ? synd.length - nsym : 0
+  const syndShift = synd.length > nsym
+    ? synd.length - nsym
+    : 0
 
   for (let i = 0; i < nsym - eraseCount; i++) {
     const K = i + syndShift
@@ -202,7 +215,10 @@ export function rsDecode(codeword: Uint8Array, nsym: number, erasePos: number[] 
   const errLoc = findErrorLocator(fsynd, nsym, erasePos.length)
   const errPos = findErrors([...errLoc].reverse(), msg.length)
 
-  msg = correctErrata(msg, synd, [...erasePos, ...errPos])
+  msg = correctErrata(msg, synd, [
+    ...erasePos,
+    ...errPos,
+  ])
 
   const check = calcSyndromes([...msg], nsym)
   if (Math.max(...check) > 0)

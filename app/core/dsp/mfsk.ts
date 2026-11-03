@@ -176,5 +176,7 @@ export function demodulateMfsk(pcm: Float32Array, byteLength?: number, cfg: Mfsk
   for (let s = 0; s < numSymbols; s++)
     writeSymbolValues(decoded.slice(s * cfg.groups, (s + 1) * cfg.groups), out, s * bps, cfg)
 
-  return byteLength === undefined ? out : out.subarray(0, byteLength)
+  return byteLength === undefined
+    ? out
+    : out.subarray(0, byteLength)
 }

@@ -5,7 +5,10 @@ import { seal } from './seal'
 
 /** Seal a UTF-8 text message (becomes a `message.ohloudtxt` payload). */
 export function sealText(text: string, passphrase: string, opts?: SealOptions): Uint8Array {
-  return seal({ filename: TEXT_FILENAME, content: utf8Encode(text) }, passphrase, opts)
+  return seal({
+    filename: TEXT_FILENAME,
+    content: utf8Encode(text),
+  }, passphrase, opts)
 }
 
 /** Seal arbitrary file bytes under the given filename. */
