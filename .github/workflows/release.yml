@@ -1,10 +1,13 @@
 name: Release
 
 # Runs when a version tag (v*) is pushed. A guard job additionally refuses to
-# deploy unless the tagged commit is on main. Manually dispatching it instead
-# (Actions → Release → Run workflow) is a REHEARSAL: every job builds with the
-# current action versions, but nothing is deployed, pushed, or published —
-# handy for proving a Dependabot action bump before spending a version tag.
+# deploy unless the tagged commit is on main. The GitHub Release it creates is
+# a DRAFT to review and publish by hand — Pages and the container image don't
+# wait for that; they go live on the tag push itself. Manually dispatching it
+# instead (Actions → Release → Run workflow) is a REHEARSAL: every job builds
+# with the current action versions, but nothing is deployed, pushed, or
+# published — handy for proving a Dependabot action bump before spending a
+# version tag.
 on:
   push:
     tags:
@@ -231,7 +234,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Collect all three artifacts and publish one GitHub Release ────────────────
+  # ── Collect all three artifacts into one draft GitHub Release ─────────────────
   release:
     needs: [verify, desktop]
     runs-on: ubuntu-latest
@@ -260,6 +263,9 @@ jobs:
       - uses: softprops/action-gh-release@v3
         if: ${{ github.event_name != 'workflow_dispatch' }} # rehearsal stops short of a Release
         with:
+          # Published by hand once the notes and assets look right. A re-run
+          # finds and refills this same draft rather than opening a second one.
+          draft: true
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
